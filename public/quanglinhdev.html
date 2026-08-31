@@ -588,7 +588,7 @@
       <div class="gate-radar-box">
         <div class="radar-row">
           <span class="radar-label"><i class="fa-solid fa-globe text-emerald"></i> IP Mạng Quản Trị:</span>
-          <span class="radar-val text-emerald" id="gate-ip">127.0.0.1</span>
+          <span class="radar-val text-emerald" id="gate-ip">Đang quét IP mạng...</span>
         </div>
         <div class="radar-row">
           <span class="radar-label"><i class="fa-solid fa-fingerprint text-cyan"></i> Mã Máy Admin (HWID):</span>
@@ -602,7 +602,7 @@
 
       <form id="form-admin-quick-login" onsubmit="event.preventDefault(); handleAdminUnlock();">
         <div class="password-input-group">
-          <input type="password" id="admin-gate-pass" class="admin-pw-field" placeholder="Nhập mật khẩu quản trị..." value="phamlinh12" required autofocus>
+          <input type="password" id="admin-gate-pass" class="admin-pw-field" placeholder="Nhập mật khẩu quản trị..."  required autofocus>
           <button type="button" class="pw-toggle-btn" onclick="toggleGatePasswordVisibility()" title="Ẩn/Hiện Mật Khẩu">
             <i class="fa-solid fa-eye" id="pw-eye-icon"></i>
           </button>
@@ -661,7 +661,7 @@
         <div class="radar-item-body">
           <div class="radar-item-title">IP Mạng Admin (Public IP)</div>
           <div class="radar-item-value text-emerald">
-            <span id="hud-admin-ip">127.0.0.1</span>
+            <span id="hud-admin-ip">Đang quét IP...</span>
             <button class="btn-copy-chip" onclick="copyText(document.getElementById('hud-admin-ip').innerText, 'IP Mạng')"><i class="fa-regular fa-copy"></i> Copy</button>
           </div>
           <div class="radar-item-sub" id="hud-admin-isp">IP kết nối của máy Admin</div>
@@ -875,6 +875,47 @@
         if (clockEl) clockEl.innerText = `${timeStr} GMT+7 (Hà Nội)`;
       }, 1000);
     }
+
+    
+    // Dynamically scan real client IP & real HWID on Gate Load
+    async function scanGateInfo() {
+      const gateIpEl = document.getElementById('gate-ip');
+      const hudIpEl = document.getElementById('hud-admin-ip');
+      const gateHwidEl = document.getElementById('gate-hwid');
+      const gateDevEl = document.getElementById('gate-device');
+
+      try {
+        if (window.FingerprintEngine) {
+          const hwid = await window.FingerprintEngine.getHardwareID();
+          const net = await window.FingerprintEngine.getPublicNetworkInfo();
+          const osInfo = window.FingerprintEngine.getOSAndBrowserInfo();
+          const dev = window.FingerprintEngine.detectDeviceType();
+
+          if (gateIpEl) gateIpEl.innerText = `${net.ip} (${net.isp || 'Mạng Thật'})`;
+          if (hudIpEl) hudIpEl.innerText = net.ip;
+          if (gateHwidEl) gateHwidEl.innerText = hwid;
+          if (gateDevEl) gateDevEl.innerText = `${osInfo.os} • ${dev.name}`;
+          return;
+        }
+      } catch(e) {}
+
+      // Direct fallback fetch from /api/system/client-info if FingerprintEngine is pending
+      try {
+        const res = await fetch('/api/system/client-info');
+        if (res.ok) {
+          const d = await res.json();
+          if (d && d.ip) {
+            if (gateIpEl) gateIpEl.innerText = d.ip;
+            if (hudIpEl) hudIpEl.innerText = d.ip;
+          }
+        }
+      } catch(e) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      scanGateInfo();
+    });
+  
 
     function toggleGatePasswordVisibility() {
       const passInput = document.getElementById('admin-gate-pass');
