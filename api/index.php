@@ -1,6 +1,6 @@
 <?php
 /**
- * ATF Task Farm - High-Performance MySQL PDO Backend API with VIP Approval & Key Gate
+ * ATF Task Farm - High-Performance MySQL PDO Backend API (100% Real SQL Data)
  * Database: ttfquanlisite_atf | User: ttfquanlisite_admin | Pass: Phamlinh@12
  */
 
@@ -55,6 +55,13 @@ if ($route === '/system/client-info' || strpos($route, 'client-info') !== false)
     exit;
 }
 
+// Helper: JSON Response
+function jsonResp($data, $code = 200) {
+    http_response_code($code);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // 2. Connect to MySQL Database
 $dbHost = 'localhost';
 $dbName = 'ttfquanlisite_atf';
@@ -68,7 +75,7 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false
     ]);
 
-    // Auto-create & migrate tables
+    // Ensure database tables
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS users (
             id VARCHAR(64) PRIMARY KEY,
@@ -99,28 +106,12 @@ try {
             used_by VARCHAR(100) NULL,
             used_at DATETIME NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        CREATE TABLE IF NOT EXISTS telegram_sessions (
-            tg_user_id VARCHAR(64) PRIMARY KEY,
-            phone VARCHAR(30) NOT NULL,
-            owner_username VARCHAR(100) NOT NULL,
-            total_assets DECIMAL(14, 4) DEFAULT 47.7963,
-            holding_wallet DECIMAL(14, 4) DEFAULT 0.0000,
-            pool_wallet DECIMAL(14, 4) DEFAULT 47.7963,
-            mined_balance DECIMAL(14, 4) DEFAULT 47.7963,
-            level INT DEFAULT 69,
-            tap_rate DECIMAL(10, 4) DEFAULT 6.8763,
-            status VARCHAR(50) DEFAULT 'running_247',
-            last_sync DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
-    // Ensure columns exist in case table was created earlier
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN status ENUM('pending', 'active', 'banned') DEFAULT 'pending'"); } catch(Exception $e) {}
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN is_approved TINYINT(1) DEFAULT 0"); } catch(Exception $e) {}
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN active_key VARCHAR(64) NULL"); } catch(Exception $e) {}
+    // Clean test/dummy users from database
+    $pdo->exec("DELETE FROM users WHERE username LIKE 'khach_vip_%'");
 
-    // Seed default admin
+    // Seed default admin if missing
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = 'admin'");
     $stmt->execute();
     if ($stmt->fetchColumn() == 0) {
@@ -137,18 +128,11 @@ try {
     $pdo = null;
 }
 
-// Helper: JSON Response
-function jsonResp($data, $code = 200) {
-    http_response_code($code);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
 // -------------------------------------------------------------
 // ROUTES
 // -------------------------------------------------------------
 
-// 1. Auth: Register (Creates PENDING user requiring Admin Approval & Key)
+// 1. Auth: Register (Real Guest Registration Only)
 if ($route === '/auth/register') {
     $username = trim($input['username'] ?? '');
     $password = trim($input['password'] ?? '');
@@ -163,8 +147,8 @@ if ($route === '/auth/register') {
     $clean = strtolower($username);
 
     if ($pdo) {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(username) = :u");
-        $stmt->execute([':u' => $clean]);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(username) = ?");
+        $stmt->execute([$clean]);
         if ($stmt->fetchColumn() > 0) {
             jsonResp(['success' => false, 'message' => 'Tài khoản đã tồn tại, vui lòng chọn tên khác'], 400);
         }
@@ -177,19 +161,19 @@ if ($route === '/auth/register') {
 
         $ins = $pdo->prepare("
             INSERT INTO users (id, username, password, role, status, is_approved, bound_hwid, bound_ip, device_type, max_threads, expires_at)
-            VALUES (:id, :u, :p, :role, :status, :appr, :hwid, :ip, :dev, 20, :exp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 20, ?)
         ");
         $ins->execute([
-            ':id' => $newId,
-            ':u' => $username,
-            ':p' => password_hash($password, PASSWORD_DEFAULT),
-            ':role' => $role,
-            ':status' => $status,
-            ':appr' => $isApproved,
-            ':hwid' => $hwid,
-            ':ip' => $clientIp,
-            ':dev' => $deviceType,
-            ':exp' => $expiresAt
+            $newId,
+            $username,
+            password_hash($password, PASSWORD_DEFAULT),
+            $role,
+            $status,
+            $isApproved,
+            $hwid,
+            $clientIp,
+            $deviceType,
+            $expiresAt
         ]);
 
         $token = base64_encode(json_encode(['id' => $newId, 'username' => $username, 'role' => $role, 'time' => time()]));
@@ -213,7 +197,7 @@ if ($route === '/auth/register') {
     }
 }
 
-// 2. Auth: Login (Checks Approval Status & Valid Key)
+// 2. Auth: Login
 if ($route === '/auth/login') {
     $username = trim($input['username'] ?? '');
     $password = trim($input['password'] ?? '');
@@ -228,8 +212,8 @@ if ($route === '/auth/login') {
     $user = null;
 
     if ($pdo) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = :u LIMIT 1");
-        $stmt->execute([':u' => $clean]);
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = ? LIMIT 1");
+        $stmt->execute([$clean]);
         $user = $stmt->fetch();
 
         if (!$user) {
@@ -242,8 +226,8 @@ if ($route === '/auth/login') {
         }
 
         // Update IP & Last active
-        $up = $pdo->prepare("UPDATE users SET bound_ip = :ip, bound_hwid = COALESCE(:hwid, bound_hwid), last_active_at = NOW() WHERE id = :id");
-        $up->execute([':ip' => $clientIp, ':hwid' => $hwid, ':id' => $user['id']]);
+        $up = $pdo->prepare("UPDATE users SET bound_ip = ?, bound_hwid = COALESCE(?, bound_hwid), last_active_at = NOW() WHERE id = ?");
+        $up->execute([$clientIp, $hwid, $user['id']]);
 
         // Check if Admin
         if ($user['role'] === 'admin') {
@@ -326,8 +310,8 @@ if ($route === '/license/redeem') {
     }
 
     if ($pdo) {
-        $kStmt = $pdo->prepare("SELECT * FROM license_keys WHERE UPPER(code) = :c LIMIT 1");
-        $kStmt->execute([':c' => $code]);
+        $kStmt = $pdo->prepare("SELECT * FROM license_keys WHERE UPPER(code) = ? LIMIT 1");
+        $kStmt->execute([$code]);
         $key = $kStmt->fetch();
 
         if (!$key) {
@@ -342,27 +326,23 @@ if ($route === '/license/redeem') {
         $threads = (int)$key['max_threads'];
 
         // Mark key as used
-        $upKey = $pdo->prepare("UPDATE license_keys SET status = 'used', used_by = :u, used_at = NOW() WHERE id = :id");
-        $upKey->execute([':u' => $username, ':id' => $key['id']]);
+        $upKey = $pdo->prepare("UPDATE license_keys SET status = 'used', used_by = ?, used_at = NOW() WHERE id = ?");
+        $upKey->execute([$username, $key['id']]);
 
-        // Activate & Extend user subscription
+        // Activate user
         $upUser = $pdo->prepare("
             UPDATE users SET 
                 status = 'active',
                 is_approved = 1,
-                active_key = :code,
-                max_threads = :threads,
+                active_key = ?,
+                max_threads = ?,
                 expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL $days DAY)
-            WHERE username = :u
+            WHERE username = ?
         ");
-        $upUser->execute([
-            ':code' => $code,
-            ':threads' => $threads,
-            ':u' => $username
-        ]);
+        $upUser->execute([$code, $threads, $username]);
 
-        $uStmt = $pdo->prepare("SELECT * FROM users WHERE username = :u");
-        $uStmt->execute([':u' => $username]);
+        $uStmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+        $uStmt->execute([$username]);
         $updatedUser = $uStmt->fetch();
 
         jsonResp([
@@ -400,10 +380,10 @@ if ($route === '/auth/admin-quick-login') {
     }
 }
 
-// 5. Admin: Dashboard Stats, Pending Approvals, Client Tracking & Keys
+// 5. Admin: Dashboard Stats (100% Real SQL Queries)
 if ($route === '/admin/dashboard-data' || $route === '/admin/stats') {
     if ($pdo) {
-        $uStmt = $pdo->query("SELECT * FROM users ORDER BY created_at DESC");
+        $uStmt = $pdo->query("SELECT * FROM users WHERE username NOT LIKE 'khach_vip_%' ORDER BY created_at DESC");
         $allUsers = $uStmt->fetchAll();
 
         $kStmt = $pdo->query("SELECT * FROM license_keys ORDER BY created_at DESC");
@@ -526,27 +506,27 @@ if ($route === '/admin/approve-user') {
 }
 
 // 7. Admin: Reject / Delete Pending User
-if ($route === '/admin/reject-user') {
+if ($route === '/admin/reject-user' || strpos($route, '/admin/users/reject') !== false) {
     $userId = trim($input['userId'] ?? $input['username'] ?? '');
     if ($pdo && !empty($userId)) {
-        $stmt = $pdo->prepare("DELETE FROM users WHERE (id = :id OR username = :u) AND role != 'admin'");
-        $stmt->execute([':id' => $userId]);
+        $stmt = $pdo->prepare("DELETE FROM users WHERE (id = ? OR username = ?) AND role != 'admin'");
+        $stmt->execute([$userId, $userId]);
     }
     jsonResp(['success' => true, 'message' => "Đã từ chối và xóa đăng ký của người dùng!"]);
 }
 
-// 8. Admin: Create VIP Key (Standalone)
+// 8. Admin: Create VIP Key
 if ($route === '/admin/create-key') {
-    $days = (int)($input['days'] ?? 30);
-    $threads = (int)($input['threads'] ?? 20);
-    $note = trim($input['note'] ?? 'Khách Mua Zalo');
+    $days = max(1, (int)($input['days'] ?? 30));
+    $threads = max(1, (int)($input['threads'] ?? 20));
+    $note = trim($input['note'] ?? 'Khách Mua');
     $count = min(50, max(1, (int)($input['count'] ?? 1)));
 
     $created = [];
     if ($pdo) {
         $ins = $pdo->prepare("
             INSERT INTO license_keys (id, code, duration_days, max_threads, note, status)
-            VALUES (:id, :code, :days, :threads, :note, 'unused')
+            VALUES (?, ?, ?, ?, ?, 'unused')
         ");
 
         for ($i = 0; $i < $count; $i++) {
@@ -556,13 +536,7 @@ if ($route === '/admin/create-key') {
             $code = "ATF-$p1-$p2-$p3";
             $keyId = 'key_' . substr(md5(uniqid()), 0, 8);
 
-            $ins->execute([
-                ':id' => $keyId,
-                ':code' => $code,
-                ':days' => $days,
-                ':threads' => $threads,
-                ':note' => $note
-            ]);
+            $ins->execute([$keyId, $code, $days, $threads, $note]);
 
             $created[] = [
                 'code' => $code,
@@ -581,38 +555,65 @@ if ($route === '/admin/create-key') {
     ]);
 }
 
-// 9. Admin: Reset HWID (Mở Khóa Máy Khách)
-if ($route === '/admin/reset-hwid') {
-    $targetUsername = trim($input['username'] ?? $input['userId'] ?? '');
-    if ($pdo && !empty($targetUsername)) {
-        $stmt = $pdo->prepare("UPDATE users SET bound_hwid = NULL WHERE username = :u OR id = :id");
-        $stmt->execute([':u' => $targetUsername, ':id' => $targetUsername]);
+// 9. Admin: Delete / Revoke Key (Supports DELETE /api/admin/keys/:code and POST /api/admin/delete-key)
+if (strpos($route, '/admin/keys/') !== false || $route === '/admin/delete-key') {
+    $keyStr = trim($input['code'] ?? $input['key'] ?? '');
+    if (empty($keyStr)) {
+        $parts = explode('/admin/keys/', $route);
+        if (!empty($parts[1])) $keyStr = trim($parts[1]);
     }
-    jsonResp(['success' => true, 'message' => "Đã mở khóa thiết bị (Reset HWID) cho khách [$targetUsername]!"]);
+
+    if ($pdo && !empty($keyStr)) {
+        $stmt = $pdo->prepare("DELETE FROM license_keys WHERE code = ?");
+        $stmt->execute([$keyStr]);
+    }
+    jsonResp(['success' => true, 'message' => "Đã xóa mã Key [$keyStr] khỏi hệ thống!"]);
 }
 
-// 10. Admin: Add Days (Cộng Ngày VIP)
-if ($route === '/admin/add-days') {
-    $targetUsername = trim($input['username'] ?? $input['userId'] ?? '');
-    $days = (int)($input['days'] ?? 30);
-    if ($pdo && !empty($targetUsername)) {
+// 10. Admin: Reset HWID
+if ($route === '/admin/reset-hwid' || strpos($route, 'reset-hwid') !== false) {
+    $target = trim($input['username'] ?? $input['userId'] ?? '');
+    if (empty($target)) {
+        preg_match('#/admin/users/(.*?)/reset-hwid#', $route, $m);
+        if (!empty($m[1])) $target = $m[1];
+    }
+    if ($pdo && !empty($target)) {
+        $stmt = $pdo->prepare("UPDATE users SET bound_hwid = NULL WHERE username = ? OR id = ?");
+        $stmt->execute([$target, $target]);
+    }
+    jsonResp(['success' => true, 'message' => "Đã mở khóa thiết bị (Reset HWID) thành công!"]);
+}
+
+// 11. Admin: Add Days / Extend VIP
+if ($route === '/admin/add-days' || strpos($route, 'extend') !== false) {
+    $target = trim($input['username'] ?? $input['userId'] ?? '');
+    if (empty($target)) {
+        preg_match('#/admin/users/(.*?)/extend#', $route, $m);
+        if (!empty($m[1])) $target = $m[1];
+    }
+    $days = max(1, (int)($input['days'] ?? 30));
+    if ($pdo && !empty($target)) {
         $stmt = $pdo->prepare("
             UPDATE users SET expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL $days DAY)
-            WHERE username = :u OR id = :id
+            WHERE username = ? OR id = ?
         ");
-        $stmt->execute([':u' => $targetUsername]);
+        $stmt->execute([$target, $target]);
     }
-    jsonResp(['success' => true, 'message' => "Đã cộng thêm $days ngày VIP cho [$targetUsername]!"]);
+    jsonResp(['success' => true, 'message' => "Đã gia hạn thêm $days ngày VIP thành công!"]);
 }
 
-// 11. Admin: Toggle Ban User
-if ($route === '/admin/toggle-ban') {
-    $targetUsername = trim($input['username'] ?? $input['userId'] ?? '');
-    if ($pdo && !empty($targetUsername)) {
-        $stmt = $pdo->prepare("UPDATE users SET is_banned = NOT is_banned WHERE username = :u OR id = :id");
-        $stmt->execute([':u' => $targetUsername]);
+// 12. Admin: Toggle Ban User
+if ($route === '/admin/toggle-ban' || strpos($route, 'toggle-ban') !== false) {
+    $target = trim($input['username'] ?? $input['userId'] ?? '');
+    if (empty($target)) {
+        preg_match('#/admin/users/(.*?)/toggle-ban#', $route, $m);
+        if (!empty($m[1])) $target = $m[1];
     }
-    jsonResp(['success' => true, 'message' => "Đã thay đổi trạng thái hoạt động của [$targetUsername]!"]);
+    if ($pdo && !empty($target)) {
+        $stmt = $pdo->prepare("UPDATE users SET is_banned = NOT is_banned WHERE username = ? OR id = ?");
+        $stmt->execute([$target, $target]);
+    }
+    jsonResp(['success' => true, 'message' => "Đã thay đổi trạng thái khóa tài khoản thành công!"]);
 }
 
 // Default Fallback
