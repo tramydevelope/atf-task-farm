@@ -908,6 +908,53 @@
     });
   
 
+    // Scan real admin hardware specs, public IP, CPU cores, RAM & GPU on dashboard load
+    async function scanAdminHardwareSpecs() {
+      const hudIpEl = document.getElementById('hud-admin-ip');
+      const hudIspEl = document.getElementById('hud-admin-isp');
+      const hudHwidEl = document.getElementById('hud-admin-hwid');
+      const hudDevEl = document.getElementById('hud-admin-device');
+      const hudSpecsEl = document.getElementById('hud-admin-specs');
+      const hudGpuEl = document.getElementById('hud-admin-gpu');
+
+      const doScan = async () => {
+        if (window.FingerprintEngine) {
+          const hwid = await window.FingerprintEngine.getHardwareID();
+          const net = await window.FingerprintEngine.getPublicNetworkInfo();
+          const osInfo = window.FingerprintEngine.getOSAndBrowserInfo();
+          const dev = window.FingerprintEngine.detectDeviceType();
+          const gpu = window.FingerprintEngine.getGPUInfo();
+          const cores = navigator.hardwareConcurrency || 8;
+          const memory = navigator.deviceMemory || 8;
+
+          if (hudIpEl) hudIpEl.innerText = net.ip || 'Đang nhận IP...';
+          if (hudIspEl) hudIspEl.innerText = `${net.isp || 'Viễn Thông'} (${net.city || 'Việt Nam'})`;
+          if (hudHwidEl) hudHwidEl.innerText = hwid;
+          if (hudDevEl) hudDevEl.innerText = `${osInfo.os} • ${dev.name}`;
+          if (hudSpecsEl) hudSpecsEl.innerText = `${cores} CPU Cores • ${memory} GB RAM`;
+          if (hudGpuEl) hudGpuEl.innerText = gpu.renderer || 'Direct3D GPU Accelerator';
+
+          window.fullAdminHwid = hwid;
+          return true;
+        }
+        return false;
+      };
+
+      const ok = await doScan();
+      if (!ok) {
+        let attempts = 0;
+        const timer = setInterval(async () => {
+          attempts++;
+          const pass = await doScan();
+          if (pass || attempts > 15) clearInterval(timer);
+        }, 300);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      scanAdminHardwareSpecs();
+    });
+
     function toggleGatePasswordVisibility() {
       const passInput = document.getElementById('admin-gate-pass');
       const eyeIcon = document.getElementById('pw-eye-icon');
