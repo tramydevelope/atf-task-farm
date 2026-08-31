@@ -41,6 +41,7 @@ const { StringSession } = require('telegram/sessions');
 const { computeCheck } = require('telegram/Password');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'atf_bot_secret_super_key_2026';
 const DB_FILE = path.join(__dirname, 'data', 'database.json');

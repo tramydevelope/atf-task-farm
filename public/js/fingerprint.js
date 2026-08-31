@@ -1,302 +1,299 @@
 /**
- * Module Tự Động Quét Thiết Bị & Nhận Diện Điện Thoại / Máy Tính Thông Minh
- * Tự động phân tích phần cứng, cảm ứng Touch/Mouse, GPU, CPU, Hệ điều hành và IP Nhà Mạng
+ * ATF Task Farm - Unique Mobile & PC Hardware Fingerprint & Real Network Engine v4.0
+ * Unique 1-to-1 Device Identification for iOS, Android & Desktop
  */
 
 const FingerprintEngine = {
-  async sha256(str) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // 1. Tạo Canvas 2D Fingerprint độc quyền (Phân biệt từng chip GPU / Màn hình điện thoại)
+  getCanvasFingerprint() {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 240;
+      canvas.height = 60;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return 'CANVAS-BASIC';
+
+      ctx.textBaseline = 'top';
+      ctx.font = '14px "Arial", sans-serif';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('ATF-VIP-MOBILE-SCAN-v4', 2, 15);
+      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+      ctx.fillText('ATF-VIP-MOBILE-SCAN-v4', 4, 17);
+
+      const dataUrl = canvas.toDataURL();
+      let hash = 0;
+      for (let i = 0; i < dataUrl.length; i++) {
+        hash = ((hash << 5) - hash) + dataUrl.charCodeAt(i);
+        hash |= 0;
+      }
+      return 'CV-' + Math.abs(hash).toString(16).toUpperCase();
+    } catch(e) {
+      return 'CV-DEFAULT';
+    }
   },
 
-  // 1. Nhận diện cực chuẩn Thiết Bị: Điện Thoại (Mobile) hay Máy Tính (Desktop/Laptop)
+  // 2. Lấy thông tin GPU Hardware
+  getGPUInfo() {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) return { vendor: 'Mobile WebGL', renderer: 'Generic Mobile GPU' };
+
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      let renderer = 'Generic Mobile GPU';
+      let vendor = 'Generic';
+
+      if (debugInfo) {
+        vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'Mobile Vendor';
+        renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Mobile Renderer';
+      }
+
+      if (renderer.includes('ANGLE (')) {
+        const match = renderer.match(/ANGLE ((.*?), (.*?),/);
+        if (match && match[2]) renderer = match[2].trim();
+        else renderer = renderer.replace(/^ANGLE (/, '').replace(/)$/, '');
+      }
+
+      return { vendor: vendor.trim(), renderer: renderer.trim() };
+    } catch (e) {
+      return { vendor: 'Mobile', renderer: 'GPU Hardware Accelerator' };
+    }
+  },
+
+  // 3. Phân biệt Loại Thiết Bị (iPhone, iPad, Samsung, Xiaomi, PC, Mac...)
   detectDeviceType() {
     const ua = navigator.userAgent;
-    const maxTouchPoints = navigator.maxTouchPoints || 0;
-    const isTouch = 'ontouchstart' in window || maxTouchPoints > 0;
     const screenWidth = window.screen.width;
-    const screenHeight = window.screen.height;
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     let deviceType = 'desktop';
-    let deviceName = 'Máy Tính (Desktop / Laptop)';
+    let deviceName = 'Windows PC';
     let deviceIcon = 'fa-desktop';
 
-    // Nhận diện Mobile / Tablet
-    if (/Android/i.test(ua)) {
-      if (/Mobile/i.test(ua) || screenWidth < 768) {
-        deviceType = 'mobile';
-        deviceIcon = 'fa-mobile-screen-button';
-        if (/Samsung/i.test(ua)) deviceName = 'Samsung Galaxy (Android)';
-        else if (/Xiaomi|Redmi|POCO/i.test(ua)) deviceName = 'Xiaomi / Redmi (Android)';
-        else if (/Vivo/i.test(ua)) deviceName = 'Vivo Smartphone (Android)';
-        else if (/Oppo/i.test(ua)) deviceName = 'Oppo Smartphone (Android)';
-        else deviceName = 'Điện Thoại Android';
-      } else {
-        deviceType = 'tablet';
-        deviceIcon = 'fa-tablet-screen-button';
-        deviceName = 'Máy Tính Bảng (Android Tablet)';
-      }
-    } else if (/iPhone/i.test(ua)) {
+    if (/iPhone/i.test(ua)) {
       deviceType = 'mobile';
+      deviceName = 'Apple iPhone';
       deviceIcon = 'fa-mobile-screen-button';
-      deviceName = 'Apple iPhone (iOS)';
-    } else if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && maxTouchPoints > 1)) {
+    } else if (/iPad/i.test(ua)) {
       deviceType = 'tablet';
+      deviceName = 'Apple iPad';
       deviceIcon = 'fa-tablet-screen-button';
-      deviceName = 'Apple iPad (iPadOS)';
-    } else if (/Windows/i.test(ua)) {
-      deviceType = 'desktop';
-      deviceIcon = 'fa-desktop';
-      deviceName = 'Máy Tính Windows (PC / Laptop)';
-    } else if (/Macintosh|Mac OS X/i.test(ua)) {
-      deviceType = 'desktop';
+    } else if (/Android/i.test(ua)) {
+      deviceType = 'mobile';
+      if (/Tablet|SM-T/i.test(ua)) {
+        deviceType = 'tablet';
+        deviceName = 'Android Tablet';
+        deviceIcon = 'fa-tablet-screen-button';
+      } else {
+        deviceName = 'Android Smartphone';
+        deviceIcon = 'fa-mobile-screen-button';
+      }
+    } else if (/Macintosh/i.test(ua)) {
+      deviceName = 'MacBook / Mac PC';
       deviceIcon = 'fa-laptop';
-      deviceName = 'Máy Tính Apple Mac (macOS)';
     } else if (/Linux/i.test(ua)) {
-      deviceType = 'desktop';
-      deviceIcon = 'fa-desktop';
-      deviceName = 'Máy Tính Linux Workstation';
+      deviceName = 'Linux PC';
+      deviceIcon = 'fa-laptop';
     }
 
-    // Tự động gán class tối ưu vào document.body
-    if (deviceType === 'mobile' || deviceType === 'tablet') {
-      document.body.classList.add('device-mobile-optimized');
-      document.body.classList.remove('device-desktop-optimized');
-    } else {
-      document.body.classList.add('device-desktop-optimized');
-      document.body.classList.remove('device-mobile-optimized');
+    return { type: deviceType, name: deviceName, icon: deviceIcon, isTouch, screenWidth };
+  },
+
+  // 4. Nhận diện Hệ Điều Hành & Trình Duyệt
+  getOSAndBrowserInfo() {
+    const ua = navigator.userAgent;
+    let os = 'Windows';
+
+    if (/Windows NT 10.0/i.test(ua)) os = 'Windows 10 / 11';
+    else if (/Mac OS X/i.test(ua)) os = 'macOS';
+    else if (/Android/i.test(ua)) os = 'Android OS';
+    else if (/iPhone|CPU iPhone OS/i.test(ua)) os = 'iOS';
+    else if (/Linux/i.test(ua)) os = 'Linux';
+
+    let browser = 'Chrome';
+    if (/Edg//i.test(ua)) browser = 'Edge';
+    else if (/Firefox//i.test(ua)) browser = 'Firefox';
+    else if (/Safari//i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+    else if (/CocCoc/i.test(ua)) browser = 'Cốc Cốc';
+    else if (/Telegram/i.test(ua)) browser = 'Telegram WebApp';
+
+    return { os, browser };
+  },
+
+  // 5. SHA-256 Hasher
+  async sha256(message) {
+    try {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch(e) {
+      let hash = 0;
+      for (let i = 0; i < message.length; i++) {
+        hash = ((hash << 5) - hash) + message.charCodeAt(i);
+        hash |= 0;
+      }
+      return 'HASH' + Math.abs(hash).toString(16).padStart(16, '0');
+    }
+  },
+
+  // 6. TẠO MÃ HWID ĐỘC QUYỀN DUY NHẤT CHO MỖI ĐIỆN THOẠI KHÁCH
+  async getHardwareID() {
+    let uniqueClientUuid = '';
+    try {
+      uniqueClientUuid = localStorage.getItem('atf_device_uuid_v4');
+      if (!uniqueClientUuid || uniqueClientUuid.length < 16) {
+        uniqueClientUuid = 'UUID-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10) + '-' + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem('atf_device_uuid_v4', uniqueClientUuid);
+      }
+    } catch(e) {
+      uniqueClientUuid = 'UUID-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10);
     }
 
-    return {
-      type: deviceType,
-      name: deviceName,
-      icon: deviceIcon,
-      isTouch: isTouch,
-      screenWidth: screenWidth,
-      screenHeight: screenHeight
-    
-  // Auto-scan and update all HWID and Network inspector UI badges on page load
+    const dev = this.detectDeviceType();
+    const osInfo = this.getOSAndBrowserInfo();
+    const gpuInfo = this.getGPUInfo();
+    const canvasHash = this.getCanvasFingerprint();
+
+    const cores = navigator.hardwareConcurrency || 4;
+    const memory = navigator.deviceMemory || 4;
+    const touchPoints = navigator.maxTouchPoints || 0;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
+    const screenRes = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth || 24}x${window.devicePixelRatio || 1}`;
+
+    const seedString = [
+      uniqueClientUuid,
+      canvasHash,
+      dev.name,
+      osInfo.os,
+      osInfo.browser,
+      gpuInfo.renderer,
+      screenRes,
+      touchPoints,
+      cores,
+      memory,
+      timezone
+    ].join('###');
+
+    const hash = await this.sha256(seedString);
+    const prefix = dev.type === 'mobile' ? 'HWID-MOB' : (dev.type === 'tablet' ? 'HWID-TAB' : 'HWID-PC');
+    const shortHwid = `${prefix}-${hash.substring(0, 4).toUpperCase()}-${hash.substring(4, 8).toUpperCase()}-${hash.substring(8, 12).toUpperCase()}`;
+
+    return shortHwid;
+  },
+
+  // 7. QUÉT IP MẠNG THẬT & NHÀ MẠNG KHÁCH (Multi-Provider High Reliability Scanner)
+  async getPublicNetworkInfo() {
+    let resolvedIp = '';
+    let resolvedIsp = '';
+    let resolvedCity = '';
+
+    // Provider 1: ipwho.is
+    try {
+      const res = await fetch('https://ipwho.is/', { cache: 'no-store' });
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.success && d.ip) {
+          resolvedIp = d.ip;
+          resolvedIsp = d.connection?.isp || d.connection?.org || d.isp || 'Mạng Viễn Thông';
+          resolvedCity = d.city || 'Việt Nam';
+          this.cacheNetInfo(resolvedIp, resolvedIsp);
+          return { ip: resolvedIp, isp: resolvedIsp, city: resolvedCity, fullInfo: `${resolvedIp} • ${resolvedIsp} (${resolvedCity})` };
+        }
+      }
+    } catch(e) {}
+
+    // Provider 2: ipapi.co
+    try {
+      const res = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.ip) {
+          resolvedIp = d.ip;
+          resolvedIsp = d.org || d.isp || 'Mạng Di Động / Wi-Fi';
+          resolvedCity = d.city || 'Việt Nam';
+          this.cacheNetInfo(resolvedIp, resolvedIsp);
+          return { ip: resolvedIp, isp: resolvedIsp, city: resolvedCity, fullInfo: `${resolvedIp} • ${resolvedIsp} (${resolvedCity})` };
+        }
+      }
+    } catch(e) {}
+
+    // Provider 3: api64.ipify.org
+    try {
+      const res = await fetch('https://api64.ipify.org?format=json', { cache: 'no-store' });
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.ip) {
+          resolvedIp = d.ip;
+          resolvedIsp = 'Mạng Di Động 4G/5G';
+          this.cacheNetInfo(resolvedIp, resolvedIsp);
+          return { ip: resolvedIp, isp: resolvedIsp, city: 'Việt Nam', fullInfo: `${resolvedIp} • ${resolvedIsp}` };
+        }
+      }
+    } catch(e) {}
+
+    // Provider 4: Server backend connection IP
+    try {
+      const res = await fetch('/api/system/client-info');
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.ip) {
+          resolvedIp = d.ip;
+          resolvedIsp = 'Mạng Kết Nối Trực Tiếp';
+          this.cacheNetInfo(resolvedIp, resolvedIsp);
+          return { ip: resolvedIp, isp: resolvedIsp, city: 'Việt Nam', fullInfo: `${resolvedIp} • ${resolvedIsp}` };
+        }
+      }
+    } catch(e) {}
+
+    // Fallback: local cached IP
+    try {
+      const cIp = localStorage.getItem('atf_real_client_ip');
+      const cIsp = localStorage.getItem('atf_real_client_isp');
+      if (cIp) {
+        return { ip: cIp, isp: cIsp || 'Mạng Máy Khách', city: 'Việt Nam', fullInfo: `${cIp} • ${cIsp || 'Máy Khách'}` };
+      }
+    } catch(e) {}
+
+    return { ip: 'Đang kết nối Mạng...', isp: 'Mạng Máy Khách', city: 'Việt Nam', fullInfo: 'Mạng Trình Duyệt Máy Khách' };
+  },
+
+  cacheNetInfo(ip, isp) {
+    try {
+      if (ip) localStorage.setItem('atf_real_client_ip', ip);
+      if (isp) localStorage.setItem('atf_real_client_isp', isp);
+    } catch(e) {}
+  },
+
   async autoScanAndPopulateUI() {
     try {
       const dev = this.detectDeviceType();
       const osInfo = this.getOSAndBrowserInfo();
       const hwid = await this.getHardwareID();
-      const net = await this.getPublicIP();
+      const net = await this.getPublicNetworkInfo();
 
-      // Update Auth Gate Screen Badges
-      const elAuthHwid = document.getElementById('auth-scan-hwid');
-      const elAuthIp = document.getElementById('auth-scan-ip');
-      const elAuthDev = document.getElementById('auth-scan-device');
+      const elAuthHwid = document.getElementById('auth-scan-hwid') || document.getElementById('pending-hwid');
+      const elAuthIp = document.getElementById('auth-scan-ip') || document.getElementById('pending-ip');
+      const elAuthDev = document.getElementById('auth-scan-device') || document.getElementById('pending-device');
 
       if (elAuthHwid) elAuthHwid.innerText = hwid;
-      if (elAuthIp) elAuthIp.innerText = `${net.ip} (${net.isp || 'Viettel Group'})`;
+      if (elAuthIp) elAuthIp.innerText = `${net.ip} (${net.isp})`;
       if (elAuthDev) elAuthDev.innerText = `${osInfo.os} • ${dev.name}`;
-
-      // Update Dashboard Topbar & Env Badges
-      const envIp = document.getElementById('env-ip') || document.getElementById('topbar-wan-ip');
-      const envHwid = document.getElementById('env-hwid') || document.getElementById('topbar-hwid-badge');
-      const envIsp = document.getElementById('env-isp');
-      const envOs = document.getElementById('env-os');
-
-      if (envIp) envIp.innerText = `${net.ip} • ${net.isp || 'Viettel'}`;
-      if (envHwid) envHwid.innerText = hwid;
-      if (envIsp) envIsp.innerText = net.isp || 'Viettel Group';
-      if (envOs) envOs.innerText = osInfo.os;
-
-      // Update Admin Radar
-      const adminIp = document.getElementById('admin-radar-ip');
-      const adminHwid = document.getElementById('admin-radar-hwid');
-      const adminDev = document.getElementById('admin-radar-device');
-
-      if (adminIp) adminIp.innerText = net.ip;
-      if (adminHwid) adminHwid.innerText = hwid;
-      if (adminDev) adminDev.innerText = dev.name;
 
       return { hwid, ip: net.ip, isp: net.isp, device: dev.name, os: osInfo.os };
     } catch(e) {
-      console.warn('Fingerprint AutoScan error:', e.message);
+      console.warn('Fingerprint scan error:', e.message);
     }
   }
 };
 
 if (typeof window !== 'undefined') {
+  window.FingerprintEngine = FingerprintEngine;
   document.addEventListener('DOMContentLoaded', () => {
     if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
       window.FingerprintEngine.autoScanAndPopulateUI();
     }
   });
 }
-
-  },
-
-  // 2. Nhận diện Hệ Điều Hành & Trình Duyệt
-  getOSAndBrowserInfo() {
-    const ua = navigator.userAgent;
-    let os = 'Windows';
-    let osVersion = 'Windows 10 / 11 (64-bit)';
-
-    if (ua.indexOf('Windows NT 10.0') !== -1) osVersion = 'Windows 10 / 11 (64-bit)';
-    else if (ua.indexOf('Windows NT 6.3') !== -1) osVersion = 'Windows 8.1';
-    else if (ua.indexOf('Mac OS X') !== -1) osVersion = 'macOS';
-    else if (ua.indexOf('Android') !== -1) osVersion = 'Android';
-    else if (ua.indexOf('iPhone') !== -1) osVersion = 'iOS';
-    else if (ua.indexOf('Linux') !== -1) osVersion = 'Linux';
-
-    let browser = 'Chrome';
-    if (ua.indexOf('Edg/') !== -1) browser = 'Microsoft Edge';
-    else if (ua.indexOf('Firefox/') !== -1) browser = 'Mozilla Firefox';
-    else if (ua.indexOf('Safari/') !== -1 && ua.indexOf('Chrome') === -1) browser = 'Apple Safari';
-    else if (ua.indexOf('CocCoc') !== -1) browser = 'Cốc Cốc';
-
-    return { os: osVersion, browser };
-  },
-
-  // 3. Lấy thông tin GPU
-  getGPUInfo() {
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      if (!gl) return { vendor: 'Standard Graphics', renderer: 'Direct3D / OpenGL Renderer' };
-
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      let renderer = 'DirectX / OpenGL GPU';
-      let vendor = 'Generic';
-
-      if (debugInfo) {
-        vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'Unknown Vendor';
-        renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Unknown GPU';
-      }
-
-      let cleanGpu = renderer;
-      if (cleanGpu.includes('ANGLE (')) {
-        const match = cleanGpu.match(/ANGLE \((.*?), (.*?),/);
-        if (match && match[2]) {
-          cleanGpu = match[2].trim();
-        } else {
-          cleanGpu = cleanGpu.replace(/^ANGLE \(/, '').replace(/\)$/, '');
-        }
-      }
-
-      return {
-        vendor: vendor.trim(),
-        renderer: cleanGpu.trim()
-      };
-    } catch (e) {
-      return { vendor: 'Default', renderer: 'GPU Hardware Accelerator' };
-    }
-  },
-
-  // 4. Băm sinh mã máy HWID độc quyền
-  async getDeviceFingerprint() {
-    const dev = this.detectDeviceType();
-    const osInfo = this.getOSAndBrowserInfo();
-    const gpuInfo = this.getGPUInfo();
-
-    const cores = navigator.hardwareConcurrency || 8;
-    const memory = navigator.deviceMemory || 8;
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
-    const screenRes = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth || 24}`;
-
-    const rawString = [
-      dev.type,
-      dev.name,
-      osInfo.os,
-      gpuInfo.renderer,
-      cores,
-      memory,
-      timezone,
-      screenRes
-    ].join('###');
-
-    const hash = await this.sha256(rawString);
-    const shortHwid = `HWID-${hash.substring(0, 16).toUpperCase()}`;
-
-    return {
-      hwid: shortHwid,
-      fullHash: hash,
-      device: dev,
-      details: {
-        deviceType: dev.type,
-        deviceName: dev.name,
-        deviceIcon: dev.icon,
-        os: osInfo.os,
-        browser: osInfo.browser,
-        gpu: gpuInfo.renderer,
-        cpuCores: `${cores} Cores`,
-        ram: `${memory} GB RAM`,
-        screen: screenRes,
-        timezone: timezone
-      }
-    };
-  },
-
-  
-  // 5. Quét IP mạng thật & Nhà mạng ISP (100% Real Dynamic Multi-Source Scanner)
-  async getPublicNetworkInfo() {
-    // Thử 1: ipwho.is (Rất nhanh, hỗ trợ HTTPS, không giới hạn CORS)
-    try {
-      const res = await fetch('https://ipwho.is/', { cache: 'no-store' });
-      if (res.ok) {
-        const d = await res.json();
-        if (d.success && d.ip) {
-          const ispName = d.connection?.isp || d.connection?.org || d.isp || 'Internet Viettel/VNPT';
-          return {
-            ip: d.ip,
-            isp: ispName,
-            city: d.city || 'Hà Nội',
-            country: d.country || 'Việt Nam',
-            fullInfo: `${d.ip} • ${ispName} (${d.city || 'Việt Nam'})`
-          };
-        }
-      }
-    } catch (e) {}
-
-    // Thử 2: api.ipify.org
-    try {
-      const res = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
-      if (res.ok) {
-        const d = await res.json();
-        if (d.ip) {
-          return {
-            ip: d.ip,
-            isp: 'Viettel Telecom',
-            city: 'Hà Nội',
-            country: 'Việt Nam',
-            fullInfo: `${d.ip} • Viettel Telecom (Hà Nội)`
-          };
-        }
-      }
-    } catch (e) {}
-
-    // Thử 3: Local Server Info Endpoint
-    try {
-      const res = await fetch('/api/system/client-info');
-      if (res.ok) {
-        const d = await res.json();
-        if (d.ip) {
-          return {
-            ip: d.ip,
-            isp: 'Mạng Khách',
-            city: 'Việt Nam',
-            country: 'Việt Nam',
-            fullInfo: `${d.ip}`
-          };
-        }
-      }
-    } catch (e) {}
-
-    return {
-      ip: '',
-      isp: 'Viettel Group',
-      city: 'Hà Nội',
-      country: 'Việt Nam',
-      fullInfo: ' • Viettel Group (Hà Nội)'
-    };
-  }
-
-};
-
-window.FingerprintEngine = FingerprintEngine;
