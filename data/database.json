@@ -19,13 +19,14 @@
       "password": "$2a$10$dyDfoobsbajcTXkgV1HI2.vDzmSUkI6LvAAbrZQth8gLVqOEAkNc.",
       "role": "user",
       "createdAt": "2026-08-30T13:57:38.963Z",
-      "expiresAt": "2026-09-30T02:38:44.502Z",
+      "expiresAt": "2026-09-30T06:46:56.447Z",
       "maxThreads": 20,
       "boundHwid": "HWID-TEST",
       "boundIp": "116.98.234.129",
       "isBanned": false,
       "lastActiveAt": "2026-08-31T02:46:58.984Z",
-      "lastLoginAt": "2026-08-31T02:45:28.967Z"
+      "lastLoginAt": "2026-08-31T02:45:28.967Z",
+      "isApproved": true
     }
   ],
   "keys": [
@@ -65,9 +66,9 @@
   "sessions": [],
   "telegramData": {
     "8251830594": {
-      "holdingWallet": 68.547,
+      "holdingWallet": 74.9463,
       "poolWallet": 0,
-      "totalAssets": 577.0143,
+      "totalAssets": 583.4095,
       "level": 71,
       "tapRate": 6.8763,
       "sessionToken": "eyJ0Z19pZCI6IjgyNTE4MzA1OTQiLCJpaCI6ImM0OTVjYWNjOWU1MDA5OTZhODAwOWQyNzE0MjhhZDI4MWFiYmM3YmQ2ZmViZjM0Mjk3MTg2ODNmYzdjNGMwOTgiLCJ1YSI6IiIsImhzdCI6ImF0Zm1pbmVycy5hc2xvbmkub25saW5lIiwiaWF0IjoxNzg4MTA5MTAxLCJleHAiOjE3ODgyODE5MDF9.4ktyX8dWPINwKw657TY45AfHNHMyPlCGiAvsOM2g9PY",
