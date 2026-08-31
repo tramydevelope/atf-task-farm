@@ -66,19 +66,19 @@
   "sessions": [],
   "telegramData": {
     "8251830594": {
-      "holdingWallet": 74.9463,
+      "holdingWallet": 78.0085,
       "poolWallet": 0,
-      "totalAssets": 583.4095,
+      "totalAssets": 586.4736,
       "level": 71,
       "tapRate": 6.8763,
       "sessionToken": "eyJ0Z19pZCI6IjgyNTE4MzA1OTQiLCJpaCI6ImM0OTVjYWNjOWU1MDA5OTZhODAwOWQyNzE0MjhhZDI4MWFiYmM3YmQ2ZmViZjM0Mjk3MTg2ODNmYzdjNGMwOTgiLCJ1YSI6IiIsImhzdCI6ImF0Zm1pbmVycy5hc2xvbmkub25saW5lIiwiaWF0IjoxNzg4MTA5MTAxLCJleHAiOjE3ODgyODE5MDF9.4ktyX8dWPINwKw657TY45AfHNHMyPlCGiAvsOM2g9PY",
       "initData": "query_id=AAFC8dhrAwAAAELx2Gtjbbdy&user=%7B%22id%22%3A8251830594%2C%22first_name%22%3A%22MAKER%20MONEY%20%F0%9F%94%A5%F0%9F%91%91%20%40KhoBauCaTaskfarmBot%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22makemoneyonliranh%22%2C%22language_code%22%3A%22vi%22%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FmDTv_MMqzvSmD2lekzU0tqk_e-C_yAeTc9H4qtU-GUYFKGEsZ55rBzfuJ-nKVdk5.svg%22%7D&auth_date=1788109100&signature=TRcTE94e5fS857LxncPuC6VVOK2CQ5OAKUMbRBb4hhrppg7JPMx0ixulEpgbWFdrOZe5wCBlif7WqdLSVOCWBQ&hash=8c1b4e61e7bf72564f0d96b763015c75dbdf931b2eddc9520c1048ebaabd67e7",
       "deviceId": "dev_m5vx83b4u4w4ucxd1vcsi",
       "taskCooldowns": {
-        "telegram_react_latest": 1788158963,
-        "website_visit": 1788158953,
-        "youtube_like_comment": 1788158925,
-        "twitter_retweet": 1788158933
+        "telegram_react_latest": 1788166163,
+        "website_visit": 1788166153,
+        "youtube_like_comment": 1788166128,
+        "twitter_retweet": 1788166141
       },
       "ownerUserId": "usr_da77c6ac",
       "ownerUsername": "linh9988",

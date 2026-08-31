@@ -141,7 +141,7 @@ app.use((req, res, next) => {
 });
 
 // Trang chính ATF và Trang Quản Lý Admin
-app.get(['/atf', '/atf/'], (req, res) => {
+app.get(['/', '/atf', '/atf/', '/index.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 app.get(['/quanglinhdev', '/atf/quanglinhdev', '/quanglinhdev.html', '/admin', '/atf/admin', '/admin.html'], (req, res) => {
