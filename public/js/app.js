@@ -298,74 +298,120 @@ const App = {
     document.getElementById('modal-telegram-login').classList.remove('hidden');
   },
 
+  // Close Telegram Login Modal
+  closeTelegramModal() {
+    const modal = document.getElementById('modal-telegram-login');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  // Open Telegram Login Modal
+  openTelegramModal() {
+    const modal = document.getElementById('modal-telegram-login');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      const stepPhone = document.getElementById('tele-step-phone');
+      const stepOtp = document.getElementById('tele-step-otp');
+      if (stepPhone) stepPhone.classList.remove('hidden');
+      if (stepOtp) stepOtp.classList.add('hidden');
+      const inputPhone = document.getElementById('tele-input-phone');
+      if (inputPhone) inputPhone.focus();
+    }
+  },
+
+  // Handle Telegram Send OTP
   async handleTelegramSendOtp() {
-    const phone = document.getElementById('tele-input-phone').value.trim();
+    const phoneInput = document.getElementById('tele-input-phone');
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+
     if (!phone || phone.length < 9) {
-      this.showToast('Vui lòng nhập số điện thoại Telegram hợp lệ!', 'warning');
+      this.showToast('Vui lòng nhập số điện thoại Telegram hợp lệ (VD: 0559210574)', 'warning');
       return;
     }
 
     const btn = document.getElementById('btn-send-tele-otp');
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang kết nối Telegram...`;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kết nối Telegram...';
+    }
 
     try {
       const res = await this.teleBot.sendTelegramOtp(phone);
-      if (res.success) {
+      if (res && res.success) {
         this.currentOtpPhone = res.phone;
         this.showToast(res.message, 'success');
-        document.getElementById('tele-display-phone').innerText = res.phone;
-        document.getElementById('tele-step-phone').classList.add('hidden');
-        document.getElementById('tele-step-otp').classList.remove('hidden');
-        document.getElementById('tele-otp-code').focus();
+
+        const displayPhone = document.getElementById('tele-display-phone');
+        if (displayPhone) displayPhone.innerText = res.phone;
+
+        const otpCodeInput = document.getElementById('tele-otp-code');
+        if (otpCodeInput && res.demoOtp) {
+          otpCodeInput.value = res.demoOtp;
+        }
+
+        const otpBadge = document.getElementById('tele-demo-otp-badge');
+        if (otpBadge && res.demoOtp) {
+          otpBadge.innerText = res.demoOtp;
+          const otpBox = document.getElementById('tele-demo-otp-box');
+          if (otpBox) otpBox.classList.remove('hidden');
+        }
+
+        const stepPhone = document.getElementById('tele-step-phone');
+        const stepOtp = document.getElementById('tele-step-otp');
+        if (stepPhone) stepPhone.classList.add('hidden');
+        if (stepOtp) stepOtp.classList.remove('hidden');
+        if (otpCodeInput) otpCodeInput.focus();
       } else {
-        this.showToast(res.message || 'Lỗi gửi mã OTP', 'error');
+        this.showToast(res ? res.message : 'Không thể gửi OTP', 'error');
       }
-    } catch (e) {
-      this.showToast('Lỗi kết nối máy chủ Telegram', 'error');
+    } catch(e) {
+      this.showToast('Lỗi gửi OTP Telegram', 'error');
     } finally {
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Gửi Mã OTP Đến Telegram`;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Gửi Mã OTP Đến Telegram';
+      }
     }
   },
 
+  // Handle Telegram Verify OTP
   async handleTelegramVerifyOtp() {
-    const otpCode = document.getElementById('tele-otp-code').value.trim();
-    const pass2FA = document.getElementById('tele-otp-2fa').value.trim();
+    const codeInput = document.getElementById('tele-otp-code');
+    const code = codeInput ? codeInput.value.trim() : '';
+    const pass2FA = document.getElementById('tele-otp-2fa') ? document.getElementById('tele-otp-2fa').value.trim() : '';
+    const btn = document.getElementById('btn-verify-tele-otp');
 
-    if (!otpCode || otpCode.length < 4) {
-      this.showToast('Vui lòng nhập mã OTP nhận được!', 'warning');
+    if (!code || code.length < 4) {
+      this.showToast('Vui lòng nhập mã OTP gồm 5 chữ số', 'warning');
       return;
     }
 
-    const btn = document.getElementById('btn-verify-tele-otp');
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang xác thực...`;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xác thực OTP...';
+    }
 
     try {
-      const res = await this.teleBot.verifyTelegramOtp(this.currentOtpPhone, otpCode, pass2FA);
-      if (res.success) {
+      const res = await this.teleBot.verifyTelegramOtp(code, pass2FA);
+      if (res && res.success) {
         this.showToast(res.message, 'success');
-        document.getElementById('modal-telegram-login').classList.add('hidden');
-        this.renderVerifiedTelegramSessions();
-
-        // Tự động kết nối và đồng bộ ngay lập tức số dư thực tế từ MiniApp
-        setTimeout(() => {
-          this.syncRealMiniAppData(false);
-        }, 500);
+        this.closeTelegramModal();
+        this.syncRealMiniAppData();
       } else {
-        this.showToast(res.message || 'Mã OTP không đúng!', 'error');
-        if (res.message && res.message.includes('2FA')) {
-          document.getElementById('tele-otp-2fa').focus();
-        }
+        this.showToast(res ? res.message : 'Mã OTP không đúng', 'error');
       }
-    } catch (e) {
-      this.showToast('Lỗi xác thực', 'error');
+    } catch(e) {
+      this.showToast('Lỗi xác thực OTP', 'error');
     } finally {
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-check-circle"></i> Xác Nhận Đăng Nhập`;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> XÁC THỰC & ĐĂNG NHẬP NGAY';
+      }
     }
-  },
+  },,
 
     renderVerifiedTelegramSessions() {
     const sessions = this.teleBot ? this.teleBot.getLocalSessions() : {};

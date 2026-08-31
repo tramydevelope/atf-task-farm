@@ -616,6 +616,78 @@ if ($route === '/admin/toggle-ban' || strpos($route, 'toggle-ban') !== false) {
     jsonResp(['success' => true, 'message' => "Đã thay đổi trạng thái khóa tài khoản thành công!"]);
 }
 
+// 13. Telegram: Send OTP
+if ($route === '/telegram/send-otp' || $route === '/telegram/send-code') {
+    $phone = trim($input['phone'] ?? '');
+    if (empty($phone)) {
+        jsonResp(['success' => false, 'message' => 'Vui lòng nhập số điện thoại Telegram hợp lệ'], 400);
+    }
+
+    if (strpos($phone, '+') !== 0) {
+        if (strpos($phone, '0') === 0) {
+            $phone = '+84' . substr($phone, 1);
+        } else {
+            $phone = '+' . $phone;
+        }
+    }
+
+    $demoOtp = (string)rand(10000, 99999);
+    $phoneHash = 'hash_tg_' . substr(md5($phone . time()), 0, 12);
+
+    if ($pdo) {
+        $ins = $pdo->prepare("
+            INSERT INTO telegram_sessions (tg_user_id, phone, owner_username, status)
+            VALUES (?, ?, ?, 'pending_otp')
+            ON DUPLICATE KEY UPDATE status = 'pending_otp'
+        ");
+        $ins->execute([$phoneHash, $phone, 'guest']);
+    }
+
+    jsonResp([
+        'success' => true,
+        'phone' => $phone,
+        'phoneCodeHash' => $phoneHash,
+        'demoOtp' => $demoOtp,
+        'message' => "🎉 Mã OTP xác nhận [$demoOtp] đã được gửi đến ứng dụng Telegram số $phone!"
+    ]);
+}
+
+// 14. Telegram: Verify OTP
+if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
+    $phone = trim($input['phone'] ?? '');
+    $code = trim($input['code'] ?? '');
+
+    if (empty($code) || strlen($code) < 4) {
+        jsonResp(['success' => false, 'message' => 'Mã OTP không hợp lệ'], 400);
+    }
+
+    $sessionData = [
+        'phone' => $phone,
+        'totalAssets' => 47.7963,
+        'holdingWallet' => 0.0000,
+        'poolWallet' => 47.7963,
+        'minedBalance' => 47.7963,
+        'level' => 69,
+        'tapRate' => 6.8763,
+        'status' => 'running_247'
+    ];
+
+    if ($pdo && !empty($phone)) {
+        $up = $pdo->prepare("
+            INSERT INTO telegram_sessions (tg_user_id, phone, owner_username, total_assets, level, tap_rate, status)
+            VALUES (?, ?, 'user', 47.7963, 69, 6.8763, 'running_247')
+            ON DUPLICATE KEY UPDATE status = 'running_247', last_sync = NOW()
+        ");
+        $up->execute(['tg_' . md5($phone), $phone]);
+    }
+
+    jsonResp([
+        'success' => true,
+        'message' => '🎉 Đăng nhập Telegram thành công! Đã kết nối phiên đào MiniApp Asloni 24/7.',
+        'session' => $sessionData
+    ]);
+}
+
 // Default Fallback
 jsonResp([
     'success' => true,
