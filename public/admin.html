@@ -860,7 +860,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       startLiveClock();
-      await scanAdminHardwareAndNetwork();
+      await scanGateInfo();
 
       if (adminToken) {
         verifyAdminSession();

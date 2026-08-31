@@ -851,16 +851,41 @@
 
   <div id="toast-container" class="toast-container"></div>
   <script src="js/fingerprint.js?v=4.5.0"></script>
-
   <script>
     let adminToken = localStorage.getItem('atf_admin_token') || null;
     let fullAdminHwid = 'HWID-SUPER-ADMIN-VERIFIED';
     let cachedClients = [];
     let cachedUnusedKeys = [];
 
+    // Fail-proof dynamic scanner for Gate Lock Screen & Dashboard
+    async function scanGateInfo() {
+      try {
+        if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
+          const res = await window.FingerprintEngine.autoScanAndPopulateUI();
+          if (res && res.hwid) fullAdminHwid = res.hwid;
+          return true;
+        }
+      } catch(e) {
+        console.warn('Scan gate error:', e);
+      }
+      return false;
+    }
+
+    async function scanAdminHardwareSpecs() {
+      await scanGateInfo();
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       startLiveClock();
-      await scanAdminHardwareAndNetwork();
+      await scanGateInfo();
+
+      // Retry scan if fingerprint engine was initializing asynchronously
+      let attempts = 0;
+      const retryTimer = setInterval(async () => {
+        attempts++;
+        const ok = await scanGateInfo();
+        if (ok || attempts > 10) clearInterval(retryTimer);
+      }, 400);
 
       if (adminToken) {
         verifyAdminSession();
@@ -871,6 +896,10 @@
       setInterval(() => {
         const now = new Date();
         const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+        const clockEl = document.getElementById('hud-admin-clock');
+        if (clockEl) clockEl.innerText = `${timeStr} GMT+7 (Hà Nội)`;
+      }, 1000);
+    });
         const clockEl = document.getElementById('hud-admin-clock');
         if (clockEl) clockEl.innerText = `${timeStr} GMT+7 (Hà Nội)`;
       }, 1000);
