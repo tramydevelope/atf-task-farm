@@ -352,13 +352,12 @@ if ($route === '/license/redeem') {
                 is_approved = 1,
                 active_key = :code,
                 max_threads = :threads,
-                expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL :days DAY)
+                expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL $days DAY)
             WHERE username = :u
         ");
         $upUser->execute([
             ':code' => $code,
             ':threads' => $threads,
-            ':days' => $days,
             ':u' => $username
         ]);
 
@@ -483,55 +482,40 @@ if ($route === '/admin/dashboard-data' || $route === '/admin/stats') {
 // 6. Admin: Approve User & Issue Key VIP
 if ($route === '/admin/approve-user') {
     $userId = trim($input['userId'] ?? $input['username'] ?? '');
-    $days = (int)($input['days'] ?? 30);
-    $threads = (int)($input['threads'] ?? 20);
+    $days = max(1, (int)($input['days'] ?? 30));
+    $threads = max(1, (int)($input['threads'] ?? 20));
 
     if (empty($userId)) {
         jsonResp(['success' => false, 'message' => 'Thiếu thông tin người dùng cần duyệt'], 400);
     }
 
     if ($pdo) {
-        // Generate a new unique VIP Key
         $p1 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
         $p2 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
         $p3 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
         $keyCode = "ATF-$p1-$p2-$p3";
         $keyId = 'key_' . substr(md5(uniqid()), 0, 8);
 
-        // Get target user username
-        $uStmt = $pdo->prepare("SELECT username FROM users WHERE id = :id OR username = :id LIMIT 1");
-        $uStmt->execute([':id' => $userId]);
+        $uStmt = $pdo->prepare("SELECT username FROM users WHERE id = ? OR username = ? LIMIT 1");
+        $uStmt->execute([$userId, $userId]);
         $targetUsername = $uStmt->fetchColumn() ?: $userId;
 
-        // Insert key as used by target user
         $insKey = $pdo->prepare("
             INSERT INTO license_keys (id, code, duration_days, max_threads, note, status, used_by, used_at)
-            VALUES (:id, :code, :days, :threads, 'Admin Phê Duyệt Trực Tiếp', 'used', :u, NOW())
+            VALUES (?, ?, ?, ?, 'Admin Phê Duyệt Trực Tiếp', 'used', ?, NOW())
         ");
-        $insKey->execute([
-            ':id' => $keyId,
-            ':code' => $keyCode,
-            ':days' => $days,
-            ':threads' => $threads,
-            ':u' => $targetUsername
-        ]);
+        $insKey->execute([$keyId, $keyCode, $days, $threads, $targetUsername]);
 
-        // Activate user in MySQL
         $up = $pdo->prepare("
             UPDATE users SET 
                 status = 'active',
                 is_approved = 1,
-                active_key = :code,
-                max_threads = :threads,
-                expires_at = DATE_ADD(NOW(), INTERVAL :days DAY)
-            WHERE id = :id OR username = :id
+                active_key = ?,
+                max_threads = ?,
+                expires_at = DATE_ADD(NOW(), INTERVAL $days DAY)
+            WHERE id = ? OR username = ?
         ");
-        $up->execute([
-            ':code' => $keyCode,
-            ':threads' => $threads,
-            ':days' => $days,
-            ':id' => $userId
-        ]);
+        $up->execute([$keyCode, $threads, $userId, $userId]);
 
         jsonResp([
             'success' => true,
@@ -545,7 +529,7 @@ if ($route === '/admin/approve-user') {
 if ($route === '/admin/reject-user') {
     $userId = trim($input['userId'] ?? $input['username'] ?? '');
     if ($pdo && !empty($userId)) {
-        $stmt = $pdo->prepare("DELETE FROM users WHERE (id = :id OR username = :id) AND role != 'admin'");
+        $stmt = $pdo->prepare("DELETE FROM users WHERE (id = :id OR username = :u) AND role != 'admin'");
         $stmt->execute([':id' => $userId]);
     }
     jsonResp(['success' => true, 'message' => "Đã từ chối và xóa đăng ký của người dùng!"]);
@@ -601,8 +585,8 @@ if ($route === '/admin/create-key') {
 if ($route === '/admin/reset-hwid') {
     $targetUsername = trim($input['username'] ?? $input['userId'] ?? '');
     if ($pdo && !empty($targetUsername)) {
-        $stmt = $pdo->prepare("UPDATE users SET bound_hwid = NULL WHERE username = :u OR id = :u");
-        $stmt->execute([':u' => $targetUsername]);
+        $stmt = $pdo->prepare("UPDATE users SET bound_hwid = NULL WHERE username = :u OR id = :id");
+        $stmt->execute([':u' => $targetUsername, ':id' => $targetUsername]);
     }
     jsonResp(['success' => true, 'message' => "Đã mở khóa thiết bị (Reset HWID) cho khách [$targetUsername]!"]);
 }
@@ -613,10 +597,10 @@ if ($route === '/admin/add-days') {
     $days = (int)($input['days'] ?? 30);
     if ($pdo && !empty($targetUsername)) {
         $stmt = $pdo->prepare("
-            UPDATE users SET expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL :days DAY)
-            WHERE username = :u OR id = :u
+            UPDATE users SET expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL $days DAY)
+            WHERE username = :u OR id = :id
         ");
-        $stmt->execute([':days' => $days, ':u' => $targetUsername]);
+        $stmt->execute([':u' => $targetUsername]);
     }
     jsonResp(['success' => true, 'message' => "Đã cộng thêm $days ngày VIP cho [$targetUsername]!"]);
 }
@@ -625,7 +609,7 @@ if ($route === '/admin/add-days') {
 if ($route === '/admin/toggle-ban') {
     $targetUsername = trim($input['username'] ?? $input['userId'] ?? '');
     if ($pdo && !empty($targetUsername)) {
-        $stmt = $pdo->prepare("UPDATE users SET is_banned = NOT is_banned WHERE username = :u OR id = :u");
+        $stmt = $pdo->prepare("UPDATE users SET is_banned = NOT is_banned WHERE username = :u OR id = :id");
         $stmt->execute([':u' => $targetUsername]);
     }
     jsonResp(['success' => true, 'message' => "Đã thay đổi trạng thái hoạt động của [$targetUsername]!"]);
