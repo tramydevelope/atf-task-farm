@@ -280,21 +280,46 @@ const FingerprintEngine = {
     } catch(e) {}
   },
 
+  // Quét và Điền Thông Tin Máy & IP Tức Thì Cho Mọi Trang (Index, Admin, Pending)
   async autoScanAndPopulateUI() {
-    this.purgeLegacyCache();
     try {
+      this.purgeLegacyCache();
       const dev = this.detectDeviceType();
       const osInfo = this.getOSAndBrowserInfo();
       const hwid = await this.getHardwareID();
       const net = await this.getPublicNetworkInfo();
 
-      const elAuthHwid = document.getElementById('auth-scan-hwid') || document.getElementById('pending-hwid');
-      const elAuthIp = document.getElementById('auth-scan-ip') || document.getElementById('pending-ip');
-      const elAuthDev = document.getElementById('auth-scan-device') || document.getElementById('pending-device');
+      const ipText = net.ip ? `${net.ip} (${net.isp || 'Mạng Thật'})` : 'Đang quét IP...';
+      const devText = `${osInfo.os} • ${dev.name}`;
 
+      // 1. Trang Đăng Ký / Đăng Nhập Chính (index.html)
+      const elAuthIp = document.getElementById('auth-scan-ip');
+      const elAuthHwid = document.getElementById('auth-scan-hwid');
+      const elAuthDev = document.getElementById('auth-scan-device');
+
+      if (elAuthIp) elAuthIp.innerText = ipText;
       if (elAuthHwid) elAuthHwid.innerText = hwid;
-      if (elAuthIp) elAuthIp.innerText = `${net.ip} (${net.isp})`;
-      if (elAuthDev) elAuthDev.innerText = `${osInfo.os} • ${dev.name}`;
+      if (elAuthDev) elAuthDev.innerText = devText;
+
+      // 2. Màn Hình Chờ Phê Duyệt VIP (screen-pending)
+      const elPendIp = document.getElementById('pending-ip');
+      const elPendHwid = document.getElementById('pending-hwid');
+      const elPendDev = document.getElementById('pending-device');
+
+      if (elPendIp) elPendIp.innerText = net.ip || ipText;
+      if (elPendHwid) elPendHwid.innerText = hwid;
+      if (elPendDev) elPendDev.innerText = devText;
+
+      // 3. Cổng Quản Trị Viên Admin (quanglinhdev.html & admin.html)
+      const elGateIp = document.getElementById('gate-ip');
+      const elGateHwid = document.getElementById('gate-hwid');
+      const elGateDev = document.getElementById('gate-device');
+      const elHudIp = document.getElementById('hud-admin-ip');
+
+      if (elGateIp) elGateIp.innerText = ipText;
+      if (elGateHwid) elGateHwid.innerText = hwid;
+      if (elGateDev) elGateDev.innerText = devText;
+      if (elHudIp) elHudIp.innerText = net.ip;
 
       return { hwid, ip: net.ip, isp: net.isp, device: dev.name, os: osInfo.os };
     } catch(e) {

@@ -878,39 +878,30 @@
 
     
     // Dynamically scan real client IP & real HWID on Gate Load
+    // Dynamically scan real client IP & real HWID on Gate Load with retry loop
     async function scanGateInfo() {
-      const gateIpEl = document.getElementById('gate-ip');
-      const hudIpEl = document.getElementById('hud-admin-ip');
-      const gateHwidEl = document.getElementById('gate-hwid');
-      const gateDevEl = document.getElementById('gate-device');
-
-      try {
-        if (window.FingerprintEngine) {
-          const hwid = await window.FingerprintEngine.getHardwareID();
-          const net = await window.FingerprintEngine.getPublicNetworkInfo();
-          const osInfo = window.FingerprintEngine.getOSAndBrowserInfo();
-          const dev = window.FingerprintEngine.detectDeviceType();
-
-          if (gateIpEl) gateIpEl.innerText = `${net.ip} (${net.isp || 'Mạng Thật'})`;
-          if (hudIpEl) hudIpEl.innerText = net.ip;
-          if (gateHwidEl) gateHwidEl.innerText = hwid;
-          if (gateDevEl) gateDevEl.innerText = `${osInfo.os} • ${dev.name}`;
-          return;
+      const doScan = async () => {
+        if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
+          const res = await window.FingerprintEngine.autoScanAndPopulateUI();
+          if (res && res.ip && res.hwid) return true;
         }
-      } catch(e) {}
+        return false;
+      };
 
-      // Direct fallback fetch from /api/system/client-info if FingerprintEngine is pending
-      try {
-        const res = await fetch('/api/system/client-info');
-        if (res.ok) {
-          const d = await res.json();
-          if (d && d.ip) {
-            if (gateIpEl) gateIpEl.innerText = d.ip;
-            if (hudIpEl) hudIpEl.innerText = d.ip;
-          }
-        }
-      } catch(e) {}
+      const ok = await doScan();
+      if (!ok) {
+        let attempts = 0;
+        const timer = setInterval(async () => {
+          attempts++;
+          const pass = await doScan();
+          if (pass || attempts > 15) clearInterval(timer);
+        }, 300);
+      }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      scanGateInfo();
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
       scanGateInfo();
