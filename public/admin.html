@@ -886,22 +886,49 @@
 
   <div id="toast-container" class="toast-container"></div>
   <script src="js/fingerprint.js?v=5.1.0"></script>
-
   <script>
     let adminToken = localStorage.getItem('atf_admin_token') || null;
     let fullAdminHwid = 'HWID-SUPER-ADMIN-VERIFIED';
     let cachedClients = [];
     let cachedUnusedKeys = [];
+    let cachedPending = [];
 
+    // 1. Scan Gate Info & Hardware
+    async function scanGateInfo() {
+      try {
+        if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
+          const res = await window.FingerprintEngine.autoScanAndPopulateUI();
+          if (res && res.hwid) fullAdminHwid = res.hwid;
+          return true;
+        }
+      } catch(e) {
+        console.warn('Scan gate error:', e);
+      }
+      return false;
+    }
+
+    async function scanAdminHardwareSpecs() {
+      await scanGateInfo();
+    }
+
+    // 2. DOM Ready Initialization
     document.addEventListener('DOMContentLoaded', async () => {
       startLiveClock();
       await scanGateInfo();
+
+      let attempts = 0;
+      const retryTimer = setInterval(async () => {
+        attempts++;
+        const ok = await scanGateInfo();
+        if (ok || attempts > 10) clearInterval(retryTimer);
+      }, 400);
 
       if (adminToken) {
         verifyAdminSession();
       }
     });
 
+    // 3. Live GMT+7 Clock
     function startLiveClock() {
       setInterval(() => {
         const now = new Date();
@@ -911,152 +938,70 @@
       }, 1000);
     }
 
-    
-    // Dynamically scan real client IP & real HWID on Gate Load
-    // Dynamically scan real client IP & real HWID on Gate Load with retry loop
-    async function scanGateInfo() {
-      const doScan = async () => {
-        if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
-          const res = await window.FingerprintEngine.autoScanAndPopulateUI();
-          if (res && res.ip && res.hwid) return true;
-        }
-        return false;
-      };
-
-      const ok = await doScan();
-      if (!ok) {
-        let attempts = 0;
-        const timer = setInterval(async () => {
-          attempts++;
-          const pass = await doScan();
-          if (pass || attempts > 15) clearInterval(timer);
-        }, 300);
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      scanGateInfo();
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-      scanGateInfo();
-    });
-  
-
-    // Scan real admin hardware specs, public IP, CPU cores, RAM & GPU on dashboard load
-    async function scanAdminHardwareSpecs() {
-      const hudIpEl = document.getElementById('hud-admin-ip');
-      const hudIspEl = document.getElementById('hud-admin-isp');
-      const hudHwidEl = document.getElementById('hud-admin-hwid');
-      const hudDevEl = document.getElementById('hud-admin-device');
-      const hudSpecsEl = document.getElementById('hud-admin-specs');
-      const hudGpuEl = document.getElementById('hud-admin-gpu');
-
-      const doScan = async () => {
-        if (window.FingerprintEngine) {
-          const hwid = await window.FingerprintEngine.getHardwareID();
-          const net = await window.FingerprintEngine.getPublicNetworkInfo();
-          const osInfo = window.FingerprintEngine.getOSAndBrowserInfo();
-          const dev = window.FingerprintEngine.detectDeviceType();
-          const gpu = window.FingerprintEngine.getGPUInfo();
-          const cores = navigator.hardwareConcurrency || 8;
-          const memory = navigator.deviceMemory || 8;
-
-          if (hudIpEl) hudIpEl.innerText = net.ip || 'Đang nhận IP...';
-          if (hudIspEl) hudIspEl.innerText = `${net.isp || 'Viễn Thông'} (${net.city || 'Việt Nam'})`;
-          if (hudHwidEl) hudHwidEl.innerText = hwid;
-          if (hudDevEl) hudDevEl.innerText = `${osInfo.os} • ${dev.name}`;
-          if (hudSpecsEl) hudSpecsEl.innerText = `${cores} CPU Cores • ${memory} GB RAM`;
-          if (hudGpuEl) hudGpuEl.innerText = gpu.renderer || 'Direct3D GPU Accelerator';
-
-          window.fullAdminHwid = hwid;
-          return true;
-        }
-        return false;
-      };
-
-      const ok = await doScan();
-      if (!ok) {
-        let attempts = 0;
-        const timer = setInterval(async () => {
-          attempts++;
-          const pass = await doScan();
-          if (pass || attempts > 15) clearInterval(timer);
-        }, 300);
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      scanAdminHardwareSpecs();
-    });
-
+    // 4. Toggle Gate Password Visibility
     function toggleGatePasswordVisibility() {
-      const passInput = document.getElementById('admin-gate-pass');
-      const eyeIcon = document.getElementById('pw-eye-icon');
-      if (passInput.type === 'password') {
-        passInput.type = 'text';
-        eyeIcon.className = 'fa-solid fa-eye-slash';
+      const field = document.getElementById('admin-gate-pass');
+      const icon = document.getElementById('pw-eye-icon');
+      if (!field || !icon) return;
+      if (field.type === 'password') {
+        field.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
       } else {
-        passInput.type = 'password';
-        eyeIcon.className = 'fa-solid fa-eye';
+        field.type = 'password';
+        icon.className = 'fa-solid fa-eye';
       }
     }
 
-    async function scanAdminHardwareAndNetwork() {
+    // 5. Show Admin Panel View
+    function showAdminPanel() {
+      const gate = document.getElementById('admin-gate-screen');
+      const panel = document.getElementById('admin-panel-screen');
+      if (gate) {
+        gate.classList.add('hidden');
+        gate.style.display = 'none';
+      }
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.style.display = 'block';
+      }
+      scanGateInfo();
+    }
+
+    // 6. Admin Logout
+    function adminLogout() {
+      adminToken = null;
+      localStorage.removeItem('atf_admin_token');
+      const gate = document.getElementById('admin-gate-screen');
+      const panel = document.getElementById('admin-panel-screen');
+      if (gate) {
+        gate.classList.remove('hidden');
+        gate.style.display = 'flex';
+      }
+      if (panel) {
+        panel.classList.add('hidden');
+        panel.style.display = 'none';
+      }
+    }
+
+    // 7. Verify Admin Session
+    async function verifyAdminSession() {
       try {
-        const cores = navigator.hardwareConcurrency || 8;
-        const memory = navigator.deviceMemory || 16;
-        const specsText = `${cores} Cores CPU • ~${memory} GB RAM`;
-        
-        const deviceRes = FingerprintEngine.detectDeviceType();
-        const deviceName = deviceRes.name || 'Máy Tính Windows PC';
-
-        const gateDevEl = document.getElementById('gate-device');
-        if (gateDevEl) gateDevEl.innerText = deviceName;
-
-        const hudSpecsEl = document.getElementById('hud-admin-specs');
-        if (hudSpecsEl) hudSpecsEl.innerText = specsText;
-
-        const hudDevEl = document.getElementById('hud-admin-device');
-        if (hudDevEl) hudDevEl.innerText = deviceName;
-
-        const glSig = FingerprintEngine.getWebGLSignature();
-        const gpuRenderer = glSig.renderer ? glSig.renderer.split('(')[0].trim() : 'Direct3D WebGL';
-        const hudGpuEl = document.getElementById('hud-admin-gpu');
-        if (hudGpuEl) hudGpuEl.innerText = `GPU: ${gpuRenderer}`;
-
-        const fp = await FingerprintEngine.getCompleteFingerprint();
-        fullAdminHwid = fp.hwid || 'HWID_SUPER_ADMIN_VERIFIED';
-        const shortHwid = fullAdminHwid.substring(0, 14) + '...';
-
-        const gateHwidEl = document.getElementById('gate-hwid');
-        if (gateHwidEl) gateHwidEl.innerText = shortHwid;
-
-        const hudHwidEl = document.getElementById('hud-admin-hwid');
-        if (hudHwidEl) hudHwidEl.innerText = shortHwid;
-
-        let publicIp = '127.0.0.1';
-        try {
-          const ipRes = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
-          const ipData = await ipRes.json();
-          if (ipData.ip) publicIp = ipData.ip;
-        } catch (e) {
-          const localIpRes = await fetch('/api/system/client-info');
-          const localIpData = await localIpRes.json();
-          if (localIpData.ip) publicIp = localIpData.ip;
+        const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
+        const res = await fetch(`${basePath}/api/admin/dashboard-data`, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          showAdminPanel();
+          renderDashboard(data);
         }
-
-        const gateIpEl = document.getElementById('gate-ip');
-        if (gateIpEl) gateIpEl.innerText = publicIp;
-
-        const hudIpEl = document.getElementById('hud-admin-ip');
-        if (hudIpEl) hudIpEl.innerText = publicIp;
-      } catch (err) {
-        console.error('Scan error:', err);
+      } catch (e) {
+        console.warn('Session verify notice:', e);
       }
     }
 
-        async function handleAdminUnlock() {
+    // 8. Handle Admin Unlock
+    async function handleAdminUnlock() {
       const passField = document.getElementById('admin-gate-pass');
       const pass = passField ? passField.value.trim() : '';
       const btn = document.getElementById('btn-admin-unlock');
@@ -1082,7 +1027,7 @@
         });
         const data = await res.json();
 
-        if (data.success && data.token) {
+        if (data && data.success && data.token) {
           adminToken = data.token;
           localStorage.setItem('atf_admin_token', adminToken);
           localStorage.setItem('atf_token', adminToken);
@@ -1092,10 +1037,9 @@
           return;
         }
       } catch (e) {
-        console.warn('API Unlock fallback:', e);
+        console.warn('API Unlock notice:', e);
       }
 
-      // Master password instant unlock fallback
       if (isMasterPass) {
         adminToken = 'master_admin_token_verified_' + Date.now();
         localStorage.setItem('atf_admin_token', adminToken);
@@ -1112,118 +1056,53 @@
       }
     }
 
-
-
-    function showAdminPanel() {
-      const gate = document.getElementById('admin-gate-screen');
-      const panel = document.getElementById('admin-panel-screen');
-      if (gate) {
-        gate.classList.add('hidden');
-        gate.style.display = 'none';
-      }
-      if (panel) {
-        panel.classList.remove('hidden');
-        panel.style.display = 'block';
-      }
-    }
-
-    function adminLogout() {
-      adminToken = null;
-      localStorage.removeItem('atf_admin_token');
-      const gate = document.getElementById('admin-gate-screen');
-      const panel = document.getElementById('admin-panel-screen');
-      if (gate) gate.classList.remove('hidden');
-      if (panel) panel.classList.add('hidden');
-      showToast('Đã khóa lại trang quản trị an toàn', 'info');
-    }
-
-    async function verifyAdminSession() {
-      try {
-        const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
-        const res = await fetch(`${basePath}/api/admin/dashboard-data`, {
-          headers: { 'Authorization': `Bearer ${adminToken}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          showAdminPanel();
-          renderDashboard(data);
-        } else {
-          adminLogout();
-        }
-      } catch (e) {
-        adminLogout();
-      }
-    }
-
-        async function loadDashboardData() {
+    // 9. Load Dashboard Data
+    async function loadDashboardData() {
       const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
       try {
         const res = await fetch(`${basePath}/api/admin/dashboard-data`, {
           headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success) {
           renderDashboard(data);
-        } else {
-          renderFallbackDashboard();
         }
       } catch (e) {
-        renderFallbackDashboard();
+        console.warn('Load dashboard notice:', e);
       }
     }
 
-    function renderFallbackDashboard() {
-      renderDashboard({
-        stats: {
-          totalUsers: 3,
-          activeUsers: 3,
-          totalKeys: 4,
-          unusedKeys: 2,
-          usedKeys: 2
-        },
-        clientTracking: [
-          {
-            userId: 'usr_linh9988',
-            username: 'linh9988',
-            role: 'user',
-            boundIp: '116.98.234.129 • Viettel Group',
-            boundHwid: 'HWID-AUTO-ACTIVE',
-            deviceType: 'Máy Tính (Desktop / Laptop)',
-            isExpired: false,
-            remainingDays: 30,
-            maxThreads: 20,
-            isBanned: false
-          }
-        ],
-        unusedKeys: []
-      });
-    }
-
-
-
+    // 10. Render Dashboard
     function renderDashboard(data) {
       if (data.stats) {
-        document.getElementById('kpi-total-users').innerText = data.stats.totalUsers || 0;
-        document.getElementById('kpi-active-users').innerText = `${data.stats.activeUsers || 0} Đang có hạn VIP`;
-        document.getElementById('kpi-total-keys').innerText = data.stats.totalKeys || 0;
-        document.getElementById('kpi-unused-keys').innerText = data.stats.unusedKeys || 0;
-        document.getElementById('kpi-used-keys').innerText = data.stats.usedKeys || 0;
+        const elTotalU = document.getElementById('kpi-total-users');
+        const elActiveU = document.getElementById('kpi-active-users');
+        const elTotalK = document.getElementById('kpi-total-keys');
+        const elUnusedK = document.getElementById('kpi-unused-keys');
+        const elUsedK = document.getElementById('kpi-used-keys');
+
+        if (elTotalU) elTotalU.innerText = data.stats.totalUsers || 0;
+        if (elActiveU) elActiveU.innerText = `${data.stats.activeUsers || 0} Đang có hạn VIP`;
+        if (elTotalK) elTotalK.innerText = data.stats.totalKeys || 0;
+        if (elUnusedK) elUnusedK.innerText = data.stats.unusedKeys || 0;
+        if (elUsedK) elUsedK.innerText = data.stats.usedKeys || 0;
       }
 
+      cachedPending = data.pendingApprovals || [];
       cachedClients = data.clientTracking || [];
       cachedUnusedKeys = data.unusedKeys || [];
 
-      if (data.pendingApprovals) renderPendingApprovals(data.pendingApprovals);
-        renderClientTracking(cachedClients);
+      renderPendingApprovals(cachedPending);
+      renderClientTracking(cachedClients);
       renderUnusedKeys(cachedUnusedKeys);
     }
 
-    // Render Client Tracking Table
-    // Render Pending Approvals Table
+    // 11. Render Pending Approvals Table
     function renderPendingApprovals(pendingList) {
       const tbody = document.getElementById('pending-approvals-tbody');
       const badgeCount = document.getElementById('badge-pending-count');
       if (badgeCount) badgeCount.innerText = `${pendingList ? pendingList.length : 0} Chờ Duyệt`;
+      if (!tbody) return;
 
       if (!pendingList || pendingList.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 24px;"><i class="fa-solid fa-circle-check text-emerald"></i> Không có thành viên nào đang chờ duyệt! Mọi đăng ký mới sẽ xuất hiện tại đây.</td></tr>';
@@ -1272,6 +1151,7 @@
       }).join('');
     }
 
+    // 12. Approve User
     async function approveUser(userId, username) {
       const daysEl = document.getElementById(`approve-days-${userId}`);
       const days = daysEl ? parseInt(daysEl.value) : 30;
@@ -1284,7 +1164,7 @@
           body: JSON.stringify({ userId: userId, username: username, days: days, threads: 20 })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success) {
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
@@ -1295,6 +1175,7 @@
       }
     }
 
+    // 13. Reject User
     async function rejectUser(userId, username) {
       if (!confirm(`Xác nhận từ chối và hủy đăng ký của tài khoản [@${username}]?`)) return;
       const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
@@ -1305,7 +1186,7 @@
           body: JSON.stringify({ userId: userId })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success) {
           showToast(data.message, 'info');
           loadDashboardData();
         } else {
@@ -1316,10 +1197,13 @@
       }
     }
 
+    // 14. Render Client Tracking Table
     function renderClientTracking(clients) {
       const tbody = document.getElementById('client-tracking-tbody');
+      if (!tbody) return;
+
       if (!clients || clients.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 24px;">Chưa có khách hàng nào đăng ký</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 24px;">Chưa có khách hàng nào đang hoạt động</td></tr>';
         return;
       }
 
@@ -1327,9 +1211,6 @@
         let keyBadge = '<span class="badge badge-warning">Chưa nạp key</span>';
         if (c.activeKey) {
           keyBadge = `<strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 13px;">${c.activeKey}</strong>`;
-          if (c.keyNote) {
-            keyBadge += `<div style="font-size: 11px; color: #94a3b8;">(${c.keyNote})</div>`;
-          }
         }
 
         let ipBadge = '<span style="color: #64748b;">Chưa gán</span>';
@@ -1337,53 +1218,41 @@
           ipBadge = `<span style="color: #10b981; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${c.boundIp}</span>`;
         }
 
-        let hwidBadge = '<span style="color: #64748b;">Chưa khóa máy</span>';
-        if (c.boundHwid) {
-          hwidBadge = `
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span style="color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 11px;">${c.boundHwid.substring(0, 12)}...</span>
-              <button class="btn-copy-chip" onclick="copyText('${c.boundHwid}', 'Mã HWID khách')"><i class="fa-regular fa-copy"></i></button>
-            </div>
-            <div style="font-size: 10.5px; color: #94a3b8;">${c.deviceType || 'PC / Laptop'}</div>
-          `;
+        let statusBadge = '<span class="badge badge-success">HOẠT ĐỘNG</span>';
+        if (c.isBanned) {
+          statusBadge = '<span class="badge badge-danger">ĐÃ KHÓA</span>';
+        } else if (c.isExpired) {
+          statusBadge = '<span class="badge badge-warning">HẾT HẠN VIP</span>';
         }
-
-        let activatedTime = '<span style="color: #64748b;">---</span>';
-        if (c.activatedAt) {
-          activatedTime = `<span style="font-size: 11.5px; color: #cbd5e1; font-family: 'JetBrains Mono', monospace;">${new Date(c.activatedAt).toLocaleString('vi-VN')}</span>`;
-        }
-
-        let remainingBadge = '<span class="badge badge-danger">Hết hạn</span>';
-        if (c.remainingDays > 0) {
-          remainingBadge = `<span class="badge badge-success">${c.remainingDays} Ngày còn lại</span>`;
-        }
-
-        let statusBadge = c.isBanned ? '<span class="badge badge-danger">BỊ KHÓA</span>' : '<span class="badge badge-success">HOẠT ĐỘNG</span>';
 
         return `
           <tr>
             <td>
-              <strong style="color: #ffffff; font-size: 13.5px;">@${c.username}</strong>
-              <div style="font-size: 10.5px; color: #64748b; font-family: monospace;">${c.userId}</div>
+              <strong style="color: #fff; font-size: 13.5px;">@${c.username}</strong>
+              <div style="font-size: 10.5px; color: #64748b;">${c.userId}</div>
             </td>
             <td>${keyBadge}</td>
             <td>${ipBadge}</td>
-            <td>${hwidBadge}</td>
-            <td>${activatedTime}</td>
-            <td>${remainingBadge}</td>
-            <td><strong style="color: #c084fc;">${c.maxThreads || 10} Luồng</strong></td>
+            <td>
+              <div style="color: #00f2fe; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">
+                ${c.boundHwid ? c.boundHwid.substring(0, 16) + '...' : 'Chưa khóa'}
+                <button class="btn-copy-chip" onclick="copyText('${c.boundHwid}', 'HWID')"><i class="fa-regular fa-copy"></i></button>
+              </div>
+              <div style="font-size: 11px; color: #94a3b8;">${c.deviceType || 'Máy Tính / Di Động'}</div>
+            </td>
+            <td><span style="color: #94a3b8;">${c.createdAt ? new Date(c.createdAt).toLocaleDateString('vi-VN') : '---'}</span></td>
+            <td>
+              <span class="badge ${c.isExpired ? 'badge-danger' : 'badge-success'}">
+                ${c.remainingDays > 0 ? c.remainingDays + ' Ngày còn lại' : 'Hết hạn'}
+              </span>
+            </td>
+            <td><strong style="color: #fbbf24;">${c.maxThreads || 20} Luồng</strong></td>
             <td>${statusBadge}</td>
             <td>
-              <div class="btn-group">
-                <button class="btn-tool btn-tool-info" title="Mở khóa máy nếu khách đổi thiết bị hoặc mạng" onclick="resetUserHwid('${c.userId}', '${c.username}')">
-                  <i class="fa-solid fa-arrows-rotate"></i> Reset Máy
-                </button>
-                <button class="btn-tool btn-tool-warn" title="Gia hạn thêm ngày" onclick="promptAddDays('${c.userId}', '${c.username}')">
-                  <i class="fa-solid fa-calendar-plus"></i> + Ngày
-                </button>
-                <button class="btn-tool ${c.isBanned ? 'btn-tool-success' : 'btn-tool-danger'}" onclick="toggleBanUser('${c.userId}')">
-                  <i class="fa-solid ${c.isBanned ? 'fa-unlock' : 'fa-ban'}"></i> ${c.isBanned ? 'Mở Khóa' : 'Khóa'}
-                </button>
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button class="btn-tool btn-tool-info" onclick="resetUserHwid('${c.userId}', '${c.username}')" title="Mở khóa máy mới"><i class="fa-solid fa-arrows-rotate"></i> Reset Máy</button>
+                <button class="btn-tool btn-tool-warn" onclick="promptAddDays('${c.userId}', '${c.username}')" title="Gia hạn VIP"><i class="fa-solid fa-plus"></i> + Ngày</button>
+                <button class="btn-tool btn-tool-danger" onclick="toggleBanUser('${c.userId}', '${c.username}')" title="Khóa / Mở tài khoản"><i class="fa-solid fa-ban"></i> Khóa</button>
               </div>
             </td>
           </tr>
@@ -1391,73 +1260,69 @@
       }).join('');
     }
 
-    // Render Unused Keys Table
+    // 15. Render Unused Keys Table
     function renderUnusedKeys(keys) {
       const tbody = document.getElementById('unused-keys-tbody');
+      if (!tbody) return;
+
       if (!keys || keys.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">Hiện tại không có Key chưa dùng nào</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">Không có key chưa dùng nào. Hãy tạo key mới ở trên!</td></tr>';
         return;
       }
 
       tbody.innerHTML = keys.map(k => {
-        const durationText = k.durationDays >= 9999 ? 'Vĩnh Viễn' : `${k.durationDays} Ngày`;
-        const timeText = new Date(k.createdAt).toLocaleString('vi-VN');
-
         return `
           <tr>
-            <td><strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 13.5px;">${k.code}</strong></td>
-            <td><span style="font-weight: 700;">${durationText}</span> • <span style="color: #38bdf8;">${k.maxThreads} Luồng</span></td>
-            <td><span style="color: #cbd5e1;">${k.note || '---'}</span></td>
-            <td><span style="font-size: 11.5px; color: #94a3b8;">${timeText}</span></td>
-            <td><span class="badge badge-success"><i class="fa-solid fa-check"></i> Chưa ai nạp (Sẵn sàng bán)</span></td>
             <td>
-              <div class="btn-group">
-                <button class="btn-tool btn-tool-warn" onclick="copyText('${k.code}', 'Mã Key VIP')"><i class="fa-regular fa-copy"></i> Copy Gửi Khách</button>
-                <button class="btn-tool btn-tool-danger" onclick="deleteKey('${k.id || k.code}')"><i class="fa-solid fa-trash"></i> Xóa</button>
-              </div>
+              <strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 13.5px;">${k.code}</strong>
+              <button class="btn-copy-chip" onclick="copyText('${k.code}', 'Mã Key')"><i class="fa-regular fa-copy"></i> Copy</button>
+            </td>
+            <td><span class="badge badge-success">${k.days} Ngày VIP</span></td>
+            <td><span style="color: #cbd5e1;">${k.note || 'Khách Mua'}</span></td>
+            <td><span style="color: #94a3b8;">${k.createdAt ? new Date(k.createdAt).toLocaleDateString('vi-VN') : 'Vừa tạo'}</span></td>
+            <td><span class="badge badge-warning">Chưa kích hoạt</span></td>
+            <td>
+              <button class="btn-tool btn-tool-danger" onclick="deleteKey('${k.code}')"><i class="fa-solid fa-trash"></i> Xóa</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    function filterClientTable() {
-      const q = document.getElementById('filter-clients-input').value.toLowerCase();
-      const filtered = cachedClients.filter(c => {
-        const u = (c.username || '').toLowerCase();
-        const ip = (c.boundIp || '').toLowerCase();
-        const k = (c.activeKey || '').toLowerCase();
-        return u.includes(q) || ip.includes(q) || k.includes(q);
-      });
-      renderClientTracking(filtered);
-    }
-
+    // 16. Handle Create Key
     async function handleCreateKey() {
       const days = parseInt(document.getElementById('gen-key-days').value) || 30;
-      const threads = parseInt(document.getElementById('gen-key-threads').value) || 10;
+      const threads = parseInt(document.getElementById('gen-key-threads').value) || 20;
       const count = parseInt(document.getElementById('gen-key-count').value) || 1;
-      const note = document.getElementById('gen-key-note').value.trim();
-
+      const note = document.getElementById('gen-key-note').value.trim() || 'Khách Mua';
       const btn = document.getElementById('btn-submit-key');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo Key...';
 
-      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...';
+
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
       try {
-        const res = await fetch(`${basePath}/api/admin/keys/create`, {
+        const res = await fetch(`${basePath}/api/admin/create-key`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ durationDays: days, maxThreads: threads, count, note })
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ days, threads, count, note })
         });
         const data = await res.json();
-        if (data.success) {
-          const keyCode = data.key ? (data.key.code || data.key.key) : (data.keys && data.keys[0] ? data.keys[0].code : 'VIP');
-          
-          // Show Banner
-          document.getElementById('banner-key-code').innerText = keyCode;
-          document.getElementById('new-key-banner').classList.remove('hidden');
 
-          showToast(`🎉 Đã tạo ${count} Key mới: ${keyCode}`, 'success');
+        if (data && data.success) {
+          const keyCode = data.keys && data.keys[0] ? data.keys[0].code : '';
+          const banner = document.getElementById('new-key-banner');
+          const bannerKey = document.getElementById('banner-key-code');
+
+          if (banner && bannerKey && keyCode) {
+            bannerKey.innerText = keyCode;
+            banner.classList.remove('hidden');
+          }
+
+          showToast(data.message || 'Tạo Key thành công!', 'success');
           loadDashboardData();
           document.getElementById('gen-key-note').value = '';
 
@@ -1475,36 +1340,18 @@
       }
     }
 
-    async function deleteKey(keyStr) {
-      if (!confirm(`Xác nhận xóa mã Key [${keyStr}] khỏi hệ thống database?`)) return;
-      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
-      try {
-        const res = await fetch(`${basePath}/api/admin/keys/${keyStr}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${adminToken}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Đã xóa Key thành công', 'info');
-          loadDashboardData();
-        } else {
-          showToast(data.message || 'Lỗi xóa Key', 'error');
-        }
-      } catch (e) {
-        showToast('Lỗi kết nối máy chủ', 'error');
-      }
-    }
-
+    // 17. Reset User HWID
     async function resetUserHwid(userId, username) {
       if (!confirm(`Mở khóa mã máy (HWID / IP) cho tài khoản [${username}]?\nKhách hàng sẽ có thể đăng nhập trên thiết bị hoặc mạng mới.`)) return;
-      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
       try {
-        const res = await fetch(`${basePath}/api/admin/users/${userId}/reset-hwid`, {
+        const res = await fetch(`${basePath}/api/admin/reset-hwid`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${adminToken}` }
+          headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userId, username: username })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success) {
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
@@ -1515,18 +1362,19 @@
       }
     }
 
+    // 18. Prompt Add Days
     async function promptAddDays(userId, username) {
       const days = prompt(`Nhập số ngày muốn cộng thêm cho tài khoản [${username}]:`, '30');
       if (!days) return;
-      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
       try {
-        const res = await fetch(`${basePath}/api/admin/users/${userId}/extend`, {
+        const res = await fetch(`${basePath}/api/admin/add-days`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ days: parseInt(days) })
+          body: JSON.stringify({ userId: userId, username: username, days: parseInt(days) })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success) {
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
@@ -1537,15 +1385,17 @@
       }
     }
 
-    async function toggleBanUser(userId) {
-      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+    // 19. Toggle Ban User
+    async function toggleBanUser(userId, username) {
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
       try {
-        const res = await fetch(`${basePath}/api/admin/users/${userId}/toggle-ban`, {
+        const res = await fetch(`${basePath}/api/admin/toggle-ban`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${adminToken}` }
+          headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userId, username: username })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success) {
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
@@ -1556,15 +1406,17 @@
       }
     }
 
+    // 20. Copy Text to Clipboard
     function copyText(text, label = 'Nội dung') {
       if (!text) return;
       navigator.clipboard.writeText(text).then(() => {
-        showToast(`✅ Đã sao chép ${label} vào bộ nhớ tạm!`, 'success');
+        showToast(`🎉 Đã sao chép ${label} vào bộ nhớ tạm!`, 'success');
       }).catch(() => {
         showToast('Không thể sao chép tự động', 'error');
       });
     }
 
+    // 21. Toast Notification
     function showToast(message, type = 'info') {
       const toast = document.createElement('div');
       toast.className = `toast toast-${type}`;
