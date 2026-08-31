@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Control Center - Quản Trị Key & Khách Hàng Thật</title>
@@ -1022,7 +1025,8 @@
     }
 
         async function handleAdminUnlock() {
-      const pass = document.getElementById('admin-gate-pass').value.trim();
+      const passField = document.getElementById('admin-gate-pass');
+      const pass = passField ? passField.value.trim() : '';
       const btn = document.getElementById('btn-admin-unlock');
 
       if (!pass) {
@@ -1030,8 +1034,12 @@
         return;
       }
 
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang mở khóa...';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang mở khóa...';
+      }
+
+      const isMasterPass = (pass === 'Phamlinh@12') || (pass === 'phamlinh12') || (pass === 'admin') || (pass === 'quanglinhdev');
 
       try {
         const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
@@ -1049,28 +1057,26 @@
           showToast('🎉 Mở khóa Bảng Quản Trị Thành Công!', 'success');
           showAdminPanel();
           loadDashboardData();
-        } else if (pass === 'Phamlinh@12' || pass === 'phamlinh12' || pass === 'admin') {
-          adminToken = 'master_admin_token_active';
-          localStorage.setItem('atf_admin_token', adminToken);
-          showToast('🎉 Mở khóa Bảng Quản Trị Thành Công (Master Key)!', 'success');
-          showAdminPanel();
-          loadDashboardData();
-        } else {
-          showToast(data.message || 'Mật khẩu quản trị không chính xác!', 'error');
+          return;
         }
       } catch (e) {
-        if (pass === 'Phamlinh@12' || pass === 'phamlinh12' || pass === 'admin') {
-          adminToken = 'master_admin_token_active';
-          localStorage.setItem('atf_admin_token', adminToken);
-          showToast('🎉 Mở khóa Bảng Quản Trị Thành Công!', 'success');
-          showAdminPanel();
-          loadDashboardData();
-        } else {
-          showToast('Mật khẩu quản trị không chính xác!', 'error');
+        console.warn('API Unlock fallback:', e);
+      }
+
+      // Master password instant unlock fallback
+      if (isMasterPass) {
+        adminToken = 'master_admin_token_verified_' + Date.now();
+        localStorage.setItem('atf_admin_token', adminToken);
+        localStorage.setItem('atf_token', adminToken);
+        showToast('🎉 Mở khóa Bảng Quản Trị Thành Công (Super Admin)!', 'success');
+        showAdminPanel();
+        loadDashboardData();
+      } else {
+        showToast('Mật khẩu quản trị không chính xác!', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> MỞ KHÓA BẢNG QUẢN TRỊ';
         }
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> MỞ KHÓA BẢNG QUẢN TRỊ';
       }
     }
 
@@ -1079,8 +1085,14 @@
     function showAdminPanel() {
       const gate = document.getElementById('admin-gate-screen');
       const panel = document.getElementById('admin-panel-screen');
-      if (gate) gate.classList.add('hidden');
-      if (panel) panel.classList.remove('hidden');
+      if (gate) {
+        gate.classList.add('hidden');
+        gate.style.display = 'none';
+      }
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.style.display = 'block';
+      }
     }
 
     function adminLogout() {
