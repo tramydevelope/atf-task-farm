@@ -150,11 +150,8 @@ app.get(['/quanglinhdev', '/atf/quanglinhdev', '/quanglinhdev.html', '/admin', '
 
 // Helper to get client IP with multi-source detection
 const getClientIp = (req) => {
-  if (req.body && req.body.clientIp && req.body.clientIp !== '127.0.0.1' && req.body.clientIp !== '::1') {
+  if (req.body && req.body.clientIp && req.body.clientIp.length > 6 && !req.body.clientIp.includes('127.0.0.1')) {
     return req.body.clientIp;
-  }
-  if (req.body && req.body.publicIp && req.body.publicIp !== '127.0.0.1' && req.body.publicIp !== '::1') {
-    return req.body.publicIp;
   }
   const cfIp = req.headers['cf-connecting-ip'];
   if (cfIp) return cfIp.trim();
@@ -166,12 +163,10 @@ const getClientIp = (req) => {
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
+
   let ip = req.socket?.remoteAddress || req.ip || '116.98.234.129';
   if (ip.startsWith('::ffff:')) {
-    ip = ip.substring(7);
-  }
-  if (ip === '::1' || ip === '127.0.0.1') {
-    return req.body?.clientIp || '116.98.234.129';
+    ip = ip.replace('::ffff:', '');
   }
   return ip;
 };

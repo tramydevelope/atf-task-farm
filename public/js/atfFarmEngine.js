@@ -28,7 +28,7 @@ class ATFFarmEngine {
   init() {
     this.updateUI();
     this.renderMissions();
-    this.startAutoTap();
+    this.startClientEngine();
     this.startClaimCountdown();
     this.startMissionTimers();
     this.initLogs();
@@ -48,6 +48,57 @@ class ATFFarmEngine {
       }));
     } catch(e) {}
   }
+
+  
+  // Tự động kích chạy 100% bằng Máy Khách (Local Client Engine)
+  startClientEngine() {
+    this.isAutoRunning = true;
+    this.startAutoTap();
+    this.startClaimCountdown();
+    this.startMissionTimers();
+    this.startBackgroundKeepAlive();
+    this.updateClientEngineBadge();
+  }
+
+  // Khởi tạo Worker Ticker giữ cho Bot tự cày 24/7 ngay cả khi ẩn tab trình duyệt
+  startBackgroundKeepAlive() {
+    if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
+    this.keepAliveInterval = setInterval(() => {
+      if (!this.isAutoRunning) return;
+      this.doAutoTapTick();
+    }, 1000);
+  }
+
+  doAutoTapTick() {
+    const gain = 0.0012;
+    this.poolWallet = +(this.poolWallet + gain).toFixed(4);
+    this.totalAssets = +(this.holdingWallet + this.poolWallet).toFixed(4);
+    this.totalTaps += 1;
+    this.saveState();
+    this.updateUI();
+  }
+
+  saveState() {
+    try {
+      localStorage.setItem('atf_farm_balance_v3', JSON.stringify({
+        totalAssets: this.totalAssets,
+        holdingWallet: this.holdingWallet,
+        poolWallet: this.poolWallet,
+        totalTaps: this.totalTaps,
+        lastSaved: Date.now()
+      }));
+    } catch(e) {}
+  }
+
+  updateClientEngineBadge() {
+    const elBadge = document.getElementById('client-engine-status-badge');
+    if (elBadge) {
+      elBadge.innerHTML = `<span class="badge badge-success" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; font-weight: 800; font-size: 11px; padding: 5px 10px; border-radius: 8px;">
+        <i class="fa-solid fa-bolt fa-bounce"></i> 🟢 BOT ĐANG TỰ CHẠY BẰNG MÁY KHÁCH (LIVE CLIENT ENGINE ACTIVE)
+      </span>`;
+    }
+  }
+
 
   startAutoTap() {
     if (this.tapInterval) clearInterval(this.tapInterval);
