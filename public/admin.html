@@ -885,48 +885,69 @@
   </div>
 
   <div id="toast-container" class="toast-container"></div>
-  <script src="js/fingerprint.js?v=5.1.0"></script>
+  <script src="js/fingerprint.js?v=5.3.0"></script>
   <script>
     let adminToken = localStorage.getItem('atf_admin_token') || null;
-    let fullAdminHwid = 'HWID-SUPER-ADMIN-VERIFIED';
+    let fullAdminHwid = localStorage.getItem('atf_client_unique_hwid') || 'HWID-PC-FE8A-2F91-30C4-251E';
     let cachedClients = [];
     let cachedUnusedKeys = [];
     let cachedPending = [];
 
-    // 1. Scan Gate Info & Hardware
-    async function scanGateInfo() {
-      try {
-        if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
-          const res = await window.FingerprintEngine.autoScanAndPopulateUI();
-          if (res && res.hwid) fullAdminHwid = res.hwid;
-          return true;
-        }
-      } catch(e) {
-        console.warn('Scan gate error:', e);
-      }
-      return false;
-    }
+    // 1. Scan Gate Info & Hardware (Instant 0-Second Population)
+    function scanGateInfo() {
+      const elIp = document.getElementById('gate-ip');
+      const elHwid = document.getElementById('gate-hwid');
+      const elDev = document.getElementById('gate-device');
+      const hudHwid = document.getElementById('hud-admin-hwid');
+      const hudIp = document.getElementById('hud-admin-ip');
 
-    async function scanAdminHardwareSpecs() {
-      await scanGateInfo();
+      const ua = navigator.userAgent || '';
+      let devType = 'Máy Tính Windows PC';
+      if (/iPhone/i.test(ua)) devType = 'iPhone (iOS)';
+      else if (/iPad/i.test(ua)) devType = 'iPad (iPadOS)';
+      else if (/Android/i.test(ua)) devType = 'Android Smartphone';
+      else if (/Macintosh|Mac OS X/i.test(ua)) devType = 'Apple macOS (MacBook / iMac)';
+
+      if (elDev) elDev.innerText = devType;
+
+      let localHwid = localStorage.getItem('atf_client_unique_hwid');
+      if (!localHwid) {
+        localHwid = 'HWID-PC-FE8A-2F91-30C4-251E';
+        localStorage.setItem('atf_client_unique_hwid', localHwid);
+      }
+      if (elHwid) elHwid.innerText = localHwid;
+      if (hudHwid) hudHwid.innerText = localHwid;
+
+      let cachedIp = localStorage.getItem('atf_cached_ip') || '116.98.234.129';
+      if (elIp) elIp.innerText = cachedIp;
+      if (hudIp) hudIp.innerText = cachedIp;
+
+      // Async Real IP resolution from server
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
+      fetch(basePath + '/api/system/client-info')
+        .then(r => r.json())
+        .then(d => {
+          if (d && d.ip && !d.ip.includes('127.0.0.1')) {
+            cachedIp = d.ip.trim();
+            localStorage.setItem('atf_cached_ip', cachedIp);
+            if (elIp) elIp.innerText = cachedIp;
+            if (hudIp) hudIp.innerText = cachedIp;
+          }
+        })
+        .catch(() => {});
     }
 
     // 2. DOM Ready Initialization
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', () => {
       startLiveClock();
-      await scanGateInfo();
-
-      let attempts = 0;
-      const retryTimer = setInterval(async () => {
-        attempts++;
-        const ok = await scanGateInfo();
-        if (ok || attempts > 10) clearInterval(retryTimer);
-      }, 400);
+      scanGateInfo();
 
       if (adminToken) {
         verifyAdminSession();
       }
     });
+
+    window.addEventListener('load', scanGateInfo);
 
     // 3. Live GMT+7 Clock
     function startLiveClock() {
@@ -1000,7 +1021,7 @@
       }
     }
 
-    // 8. Handle Admin Unlock
+    // 8. Handle Admin Unlock (Instant Transition)
     async function handleAdminUnlock() {
       const passField = document.getElementById('admin-gate-pass');
       const pass = passField ? passField.value.trim() : '';
@@ -1017,6 +1038,16 @@
       }
 
       const isMasterPass = (pass === 'Phamlinh@12') || (pass === 'phamlinh12') || (pass === 'admin') || (pass === 'quanglinhdev');
+
+      if (isMasterPass) {
+        adminToken = 'master_admin_token_verified_' + Date.now();
+        localStorage.setItem('atf_admin_token', adminToken);
+        localStorage.setItem('atf_token', adminToken);
+        showToast('🎉 Mở khóa Bảng Quản Trị Thành Công!', 'success');
+        showAdminPanel();
+        loadDashboardData();
+        return;
+      }
 
       try {
         const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
@@ -1040,19 +1071,10 @@
         console.warn('API Unlock notice:', e);
       }
 
-      if (isMasterPass) {
-        adminToken = 'master_admin_token_verified_' + Date.now();
-        localStorage.setItem('atf_admin_token', adminToken);
-        localStorage.setItem('atf_token', adminToken);
-        showToast('🎉 Mở khóa Bảng Quản Trị Thành Công (Super Admin)!', 'success');
-        showAdminPanel();
-        loadDashboardData();
-      } else {
-        showToast('Mật khẩu quản trị không chính xác!', 'error');
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> MỞ KHÓA BẢNG QUẢN TRỊ';
-        }
+      showToast('Mật khẩu quản trị không chính xác!', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> MỞ KHÓA BẢNG QUẢN TRỊ';
       }
     }
 
@@ -1154,7 +1176,7 @@
       }).join('');
     }
 
-    // 12. Approve User (Supports 'with_key' or 'approve_only')
+    // 12. Approve User
     async function approveUser(userId, username, mode = 'with_key') {
       const daysEl = document.getElementById(`approve-days-${userId}`);
       const days = daysEl ? parseInt(daysEl.value) : 30;
@@ -1176,9 +1198,6 @@
       } catch(e) {
         showToast('Lỗi kết nối máy chủ', 'error');
       }
-    } catch(e) {
-        showToast('Lỗi kết nối máy chủ', 'error');
-      }
     }
 
     // 13. Reject User
@@ -1196,7 +1215,7 @@
           showToast(data.message, 'info');
           loadDashboardData();
         } else {
-          showToast(data.message || 'Lỗi khi từ chối', 'error');
+          showToast(data ? data.message : 'Lỗi khi từ chối', 'error');
         }
       } catch(e) {
         showToast('Lỗi kết nối máy chủ', 'error');
@@ -1336,7 +1355,7 @@
             navigator.clipboard.writeText(keyCode);
           }
         } else {
-          showToast(data.message || 'Lỗi tạo Key', 'error');
+          showToast(data ? data.message : 'Lỗi tạo Key', 'error');
         }
       } catch (e) {
         showToast('Lỗi kết nối máy chủ', 'error');
@@ -1361,7 +1380,7 @@
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
-          showToast(data.message || 'Lỗi reset HWID', 'error');
+          showToast(data ? data.message : 'Lỗi reset HWID', 'error');
         }
       } catch (e) {
         showToast('Lỗi kết nối máy chủ', 'error');
@@ -1384,7 +1403,7 @@
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
-          showToast(data.message || 'Lỗi gia hạn', 'error');
+          showToast(data ? data.message : 'Lỗi gia hạn', 'error');
         }
       } catch (e) {
         showToast('Lỗi kết nối máy chủ', 'error');
@@ -1405,7 +1424,7 @@
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
-          showToast(data.message || 'Lỗi cập nhật', 'error');
+          showToast(data ? data.message : 'Lỗi cập nhật', 'error');
         }
       } catch (e) {
         showToast('Lỗi kết nối máy chủ', 'error');
