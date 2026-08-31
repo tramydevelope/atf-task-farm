@@ -1,7 +1,6 @@
 /**
- * ATF Task Farm - Advanced Client Hardware & Real Public IP Isolation Engine v5.2.0
- * Generates 100% Unique Cryptographic HWID per Device (GPU + CPU + AudioContext + Canvas + RAM + Resolution)
- * Guarantees Zero IP / HWID Collision Across Clients
+ * ATF Task Farm - Instant Hardware & Real IP Fingerprint Engine v5.3.0
+ * Zero-Delay UI Population across all element IDs
  */
 
 (function(global) {
@@ -71,35 +70,7 @@
     return 'CANVAS_FALLBACK_' + (navigator.userAgent || '');
   }
 
-  async function getAudioFingerprint() {
-    try {
-      const AudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-      if (!AudioContext) return 'AUDIO_NOT_SUPPORTED';
-      const ctx = new AudioContext(1, 44100, 44100);
-      const osc = ctx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(10000, ctx.currentTime);
-      const comp = ctx.createDynamicsCompressor();
-      comp.threshold.setValueAtTime(-50, ctx.currentTime);
-      comp.knee.setValueAtTime(40, ctx.currentTime);
-      comp.ratio.setValueAtTime(12, ctx.currentTime);
-      comp.attack.setValueAtTime(0, ctx.currentTime);
-      comp.release.setValueAtTime(0.25, ctx.currentTime);
-      osc.connect(comp);
-      comp.connect(ctx.destination);
-      osc.start(0);
-      const rendered = await ctx.startRendering();
-      let sum = 0;
-      for (let i = 0; i < rendered.length; i++) {
-        sum += Math.abs(rendered.getChannelData(0)[i]);
-      }
-      return 'AUDIO_' + sum.toFixed(6);
-    } catch(e) {
-      return 'AUDIO_DEFAULT_CURVE';
-    }
-  }
-
-  async function generateCryptographicHwid() {
+  function generateInstantHwid() {
     let localStored = localStorage.getItem('atf_client_unique_hwid');
     if (localStored && localStored.startsWith('HWID-')) {
       return localStored;
@@ -109,15 +80,14 @@
     const gpu = getRealGpuRenderer();
     const cores = getRealCpuCores();
     const ram = getRealRamGb();
-    const screenRes = (window.screen.width || 1920) + 'x' + (window.screen.height || 1080) + 'x' + (window.screen.colorDepth || 24);
+    const screenRes = (window.screen ? window.screen.width : 1920) + 'x' + (window.screen ? window.screen.height : 1080);
     const canvasHash = fnv1a(generateCanvasFingerprint());
-    const audioHash = fnv1a(await getAudioFingerprint());
     const uaHash = fnv1a(navigator.userAgent || 'CLIENT');
 
     const prefix = devType.includes('iPhone') ? 'HWID-IPHONE' : (devType.includes('Android') ? 'HWID-ANDROID' : 'HWID-PC');
     const p1 = fnv1a(gpu + cores + screenRes).substring(0, 4);
     const p2 = fnv1a(ram + canvasHash).substring(0, 4);
-    const p3 = fnv1a(audioHash + uaHash).substring(0, 4);
+    const p3 = fnv1a(uaHash).substring(0, 4);
     const p4 = fnv1a(Date.now() + Math.random().toString()).substring(0, 4);
 
     const generated = prefix + '-' + p1 + '-' + p2 + '-' + p3 + '-' + p4;
@@ -125,36 +95,50 @@
     return generated;
   }
 
+  let cachedIp = localStorage.getItem('atf_cached_ip') || '116.98.234.129';
+
   async function fetchRealPublicIp() {
+    const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
     const gateways = [
+      basePath + '/api/system/client-info',
       'https://api.ipify.org?format=json',
-      'https://api64.ipify.org?format=json',
-      '/api/system/client-info'
+      'https://api64.ipify.org?format=json'
     ];
 
     for (const url of gateways) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         const res = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
         const data = await res.json();
         if (data && data.ip && !data.ip.includes('127.0.0.1')) {
-          return data.ip.trim();
+          cachedIp = data.ip.trim();
+          localStorage.setItem('atf_cached_ip', cachedIp);
+          return cachedIp;
         }
       } catch(e) {}
     }
-    return '116.98.234.129';
+    return cachedIp;
+  }
+
+  function setElementValues(ids, value) {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerText = value;
+      }
+    });
   }
 
   const FingerprintEngine = {
     async scanAll() {
-      const realIp = await fetchRealPublicIp();
-      const hwid = await generateCryptographicHwid();
+      const hwid = generateInstantHwid();
       const deviceType = getRealDeviceType();
       const gpu = getRealGpuRenderer();
       const cores = getRealCpuCores();
       const ram = getRealRamGb();
+      const realIp = await fetchRealPublicIp();
 
       return {
         ip: realIp,
@@ -166,58 +150,69 @@
       };
     },
 
-    async autoScanAndPopulateUI() {
-      const info = await this.scanAll();
+    autoScanAndPopulateUI() {
+      const hwid = generateInstantHwid();
+      const deviceType = getRealDeviceType();
+      const gpu = getRealGpuRenderer();
+      const cores = getRealCpuCores();
+      const ram = getRealRamGb();
 
-      const ipEls = [
-        document.getElementById('gate-ip-display'),
-        document.getElementById('gate-scan-ip'),
-        document.getElementById('hud-admin-ip'),
-        document.getElementById('hud-user-ip'),
-        document.getElementById('auth-ip-display'),
-        document.getElementById('pending-ip')
-      ];
-      ipEls.forEach(el => {
-        if (el) el.innerText = info.ip;
+      // Instant Synchronous UI Population
+      setElementValues([
+        'auth-scan-hwid', 'auth-hwid-display', 'gate-scan-hwid', 'gate-hwid-display',
+        'hud-admin-hwid', 'pending-hwid', 'env-hwid'
+      ], hwid);
+
+      setElementValues([
+        'auth-scan-device', 'auth-device-display', 'gate-scan-device', 'gate-device-display',
+        'hud-device-name', 'pending-device', 'env-device'
+      ], deviceType);
+
+      setElementValues([
+        'auth-scan-ip', 'auth-ip-display', 'gate-scan-ip', 'gate-ip-display',
+        'hud-admin-ip', 'hud-user-ip', 'pending-ip', 'env-ip'
+      ], cachedIp);
+
+      setElementValues([
+        'gate-specs-display', 'hud-admin-specs'
+      ], cores + ' CPU Cores • ' + ram + ' RAM • ' + gpu);
+
+      // Background Real IP Resolution
+      fetchRealPublicIp().then(resolvedIp => {
+        setElementValues([
+          'auth-scan-ip', 'auth-ip-display', 'gate-scan-ip', 'gate-ip-display',
+          'hud-admin-ip', 'hud-user-ip', 'pending-ip', 'env-ip'
+        ], resolvedIp);
       });
 
-      const hwidEls = [
-        document.getElementById('gate-hwid-display'),
-        document.getElementById('gate-scan-hwid'),
-        document.getElementById('hud-admin-hwid'),
-        document.getElementById('auth-hwid-display'),
-        document.getElementById('pending-hwid')
-      ];
-      hwidEls.forEach(el => {
-        if (el) el.innerText = info.hwid;
-      });
-
-      const devEls = [
-        document.getElementById('gate-device-display'),
-        document.getElementById('hud-device-name'),
-        document.getElementById('pending-device')
-      ];
-      devEls.forEach(el => {
-        if (el) el.innerText = info.deviceType;
-      });
-
-      const specEls = [
-        document.getElementById('gate-specs-display'),
-        document.getElementById('hud-admin-specs')
-      ];
-      specEls.forEach(el => {
-        if (el) el.innerText = info.cores + ' CPU Cores • ' + info.ram + ' RAM • ' + info.gpu;
-      });
-
-      return info;
+      return {
+        ip: cachedIp,
+        hwid: hwid,
+        deviceType: deviceType,
+        gpu: gpu,
+        cores: cores,
+        ram: ram
+      };
     }
   };
 
   global.FingerprintEngine = FingerprintEngine;
 
+  // Execute synchronously immediately
+  FingerprintEngine.autoScanAndPopulateUI();
+
+  // Execute on DOM events
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => FingerprintEngine.autoScanAndPopulateUI());
-  } else {
-    FingerprintEngine.autoScanAndPopulateUI();
   }
+  window.addEventListener('load', () => FingerprintEngine.autoScanAndPopulateUI());
+
+  // Fast interval to catch any delayed element rendering
+  let count = 0;
+  const timer = setInterval(() => {
+    count++;
+    FingerprintEngine.autoScanAndPopulateUI();
+    if (count > 10) clearInterval(timer);
+  }, 200);
+
 })(typeof window !== 'undefined' ? window : global);
