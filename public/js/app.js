@@ -759,12 +759,30 @@ const App = {
 
   switchAuthMode(mode) {
     document.querySelectorAll('.auth-tab-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.mode === mode);
+      b.classList.toggle('active', b.getAttribute('data-mode') === mode);
     });
     const formLogin = document.getElementById('form-login');
     const formRegister = document.getElementById('form-register');
-    if (formLogin) formLogin.classList.toggle('hidden', mode !== 'login');
-    if (formRegister) formRegister.classList.toggle('hidden', mode !== 'register');
+    if (formLogin) {
+      if (mode === 'login') {
+        formLogin.classList.remove('hidden');
+        formLogin.style.display = 'block';
+      } else {
+        formLogin.classList.add('hidden');
+        formLogin.style.display = 'none';
+      }
+    }
+    if (formRegister) {
+      if (mode === 'register') {
+        formRegister.classList.remove('hidden');
+        formRegister.style.display = 'block';
+        const regInput = document.getElementById('auth-register-username');
+        if (regInput) regInput.focus();
+      } else {
+        formRegister.classList.add('hidden');
+        formRegister.style.display = 'none';
+      }
+    }
   },
 
   togglePasswordVisibility(inputId, iconEl) {
