@@ -152,6 +152,98 @@
   <!-- ==========================================
        2. MAIN DASHBOARD SCREEN (GIAO DIỆN CHÍNH)
        ========================================== -->
+  
+  <!-- ==========================================
+       STAGE 1: MÀN HÌNH CHỜ ADMIN DUYỆT
+       ========================================== -->
+  <div id="screen-pending" class="auth-wrapper hidden" style="position: fixed; inset: 0; z-index: 9999; background: #030712; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="auth-card" style="max-width: 460px; width: 100%; text-align: center; border: 1.5px solid rgba(251, 191, 36, 0.4); box-shadow: 0 0 40px rgba(251, 191, 36, 0.15);">
+      <div style="width: 70px; height: 70px; background: rgba(251, 191, 36, 0.15); border: 2px solid #fbbf24; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px; color: #fbbf24; box-shadow: 0 0 25px rgba(251, 191, 36, 0.35);">
+        <i class="fa-solid fa-hourglass-half fa-spin"></i>
+      </div>
+
+      <h2 style="font-size: 20px; font-weight: 900; color: #fbbf24; margin-bottom: 6px; text-transform: uppercase;">Tài Khoản Đang Chờ Duyệt</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">
+        Đăng ký thành công! Tài khoản của bạn đang được chuyển đến Quản trị viên để xét duyệt.
+      </p>
+
+      <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: left; font-size: 12.5px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Tên tài khoản:</span>
+          <strong class="font-mono text-cyan" id="pending-username-display">@user</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">IP Mạng Thật:</span>
+          <strong class="font-mono text-emerald" id="pending-ip-display">116.98.234.129</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Mã Máy (HWID):</span>
+          <strong class="font-mono text-cyan" id="pending-hwid-display">HWID-PC-VERIFIED</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Trạng thái:</span>
+          <span class="badge badge-warning" style="font-size: 10.5px;"><i class="fa-solid fa-clock"></i> CHỜ ADMIN DUYỆT</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button type="button" class="btn-auth-action btn-auth-primary" onclick="App.checkPendingApprovalStatus()" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; font-weight: 800;">
+          <i class="fa-solid fa-rotate"></i> KIỂM TRA TRẠNG THÁI DUYỆT
+        </button>
+        <button type="button" class="btn-auth-action" onclick="App.showScreen('auth')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; font-size: 12.5px;">
+          <i class="fa-solid fa-arrow-left"></i> Quay Lại Trang Đăng Nhập
+        </button>
+      </div>
+
+      <div style="font-size: 11px; color: #64748b; margin-top: 16px;">
+        💡 <em>Hệ thống đang tự động kiểm tra trạng thái mỗi 4 giây...</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       STAGE 2: MÀN HÌNH NHẬP MÃ KEY VIP
+       ========================================== -->
+  <div id="screen-key-gate" class="auth-wrapper hidden" style="position: fixed; inset: 0; z-index: 9999; background: #030712; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="auth-card" style="max-width: 480px; width: 100%; text-align: center; border: 1.5px solid rgba(0, 242, 254, 0.4); box-shadow: 0 0 40px rgba(0, 242, 254, 0.15);">
+      <div style="width: 70px; height: 70px; background: rgba(0, 242, 254, 0.15); border: 2px solid #00f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px; color: #00f2fe; box-shadow: 0 0 25px rgba(0, 242, 254, 0.35);">
+        <i class="fa-solid fa-key"></i>
+      </div>
+
+      <div style="display: inline-block; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 800; margin-bottom: 10px;">
+        <i class="fa-solid fa-circle-check"></i> ĐÃ ĐƯỢC ADMIN DUYỆT TÀI KHOẢN
+      </div>
+
+      <h2 style="font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 6px; text-transform: uppercase;">Kích Hoạt Key VIP Để Sử Dụng</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">
+        Chào mừng <strong class="text-cyan font-mono" id="gate-username-display">@user</strong>! Hãy nhập mã Key VIP được cấp để mở khóa Bảng điều khiển cày Bot.
+      </p>
+
+      <form onsubmit="event.preventDefault(); App.redeemGateKey();">
+        <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+          <label class="form-label">
+            <span><i class="fa-solid fa-ticket text-gold"></i> Mã Key Kích Hoạt VIP</span>
+            <span class="text-gold font-mono" style="font-size: 11px;">Định dạng: ATF-XXXX-XXXX-XXXX</span>
+          </label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-key input-icon-left text-gold"></i>
+            <input type="text" id="input-gate-license-key" class="form-control" placeholder="Nhập mã Key VIP (Ví dụ: ATF-XXXX-XXXX-XXXX)..." required style="text-transform: uppercase; font-family: 'JetBrains Mono', monospace; font-weight: 800; letter-spacing: 1.5px; border-color: rgba(251, 191, 36, 0.4);">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-gate-redeem" class="btn-auth-action" style="background: linear-gradient(135deg, #00f2fe, #4facfe); color: #000; font-weight: 900; font-size: 14px; box-shadow: 0 8px 25px rgba(0, 242, 254, 0.35);">
+          <i class="fa-solid fa-bolt"></i> KÍCH HOẠT KEY & VÀO HỆ THỐNG
+        </button>
+      </form>
+
+      <div style="margin-top: 18px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 14px;">
+        <button type="button" class="btn btn-sm" onclick="App.showScreen('auth')" style="background: transparent; color: #94a3b8; font-size: 12px;">
+          <i class="fa-solid fa-arrow-left"></i> Đăng xuất / Quay lại
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="screen-dashboard" class="app-container hidden">
     <!-- Topbar Header -->
     <header class="topbar">
