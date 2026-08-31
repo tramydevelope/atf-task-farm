@@ -66,9 +66,9 @@
   "sessions": [],
   "telegramData": {
     "8251830594": {
-      "holdingWallet": 78.0085,
+      "holdingWallet": 78.2436,
       "poolWallet": 0,
-      "totalAssets": 586.4736,
+      "totalAssets": 586.7068,
       "level": 71,
       "tapRate": 6.8763,
       "sessionToken": "eyJ0Z19pZCI6IjgyNTE4MzA1OTQiLCJpaCI6ImM0OTVjYWNjOWU1MDA5OTZhODAwOWQyNzE0MjhhZDI4MWFiYmM3YmQ2ZmViZjM0Mjk3MTg2ODNmYzdjNGMwOTgiLCJ1YSI6IiIsImhzdCI6ImF0Zm1pbmVycy5hc2xvbmkub25saW5lIiwiaWF0IjoxNzg4MTA5MTAxLCJleHAiOjE3ODgyODE5MDF9.4ktyX8dWPINwKw657TY45AfHNHMyPlCGiAvsOM2g9PY",

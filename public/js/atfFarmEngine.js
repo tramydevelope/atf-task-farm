@@ -101,47 +101,44 @@ class ATFFarmEngine {
     setTimeout(() => el.remove(), 900);
   }
 
-  startClaimCountdown() {
+    startClaimCountdown() {
     if (this.claimInterval) clearInterval(this.claimInterval);
     this.claimInterval = setInterval(() => {
       if (this.claimSecondsRemaining > 0) {
         this.claimSecondsRemaining -= 1;
       } else {
-        this.claimSecondsRemaining = 3600;
-        this.claimPoolWallet(true);
+        this.claimSecondsRemaining = 3600; // Reset chu kỳ 60 phút
+        this.claimPoolWallet(true); // TỰ ĐỘNG GOM CLAIM THẬT!
       }
       this.updateClaimUI();
     }, 1000);
   }
 
-  updateClaimUI() {
-    const el = document.getElementById('claim-timer-countdown') || document.getElementById('auto-claim-countdown-timer');
-    if (el) {
-      const mm = Math.floor(this.claimSecondsRemaining / 60).toString().padStart(2, '0');
-      const ss = (this.claimSecondsRemaining % 60).toString().padStart(2, '0');
-      el.innerText = `${mm}:${ss}`;
-    }
-  }
-
-  setClaimMinutes(mins) {
-    this.claimSecondsRemaining = parseInt(mins) * 60;
-    this.updateClaimUI();
-  }
-
-  claimPoolWallet(isAuto = false) {
+  async claimPoolWallet(isAuto = false) {
     if (this.poolWallet <= 0) {
       if (!isAuto && window.App) window.App.showToast('Ví đào hiện đang trống!', 'warning');
       return;
     }
+
     const claimed = this.poolWallet;
     this.holdingWallet = +(this.holdingWallet + claimed).toFixed(4);
     this.poolWallet = 0.0000;
     this.totalAssets = +(this.holdingWallet + this.poolWallet).toFixed(4);
+
     this.saveBalanceToStorage();
     this.updateUI();
-    this.appendLog('CLAIM', `🎁 ${isAuto ? 'Tự động gom' : 'Đã gom'} +${claimed.toFixed(4)} ATF vào Ví Chính thành công!`);
-    if (window.App) window.App.showToast(`🎁 ĐÃ GOM +${claimed.toFixed(4)} ATF VÀO VÍ CHÍNH!`, 'success');
+
+    try {
+      if (window.App) {
+        await window.App.apiFetch('/api/telegram/claim-pool', { method: 'POST' });
+      }
+    } catch(e) {}
+
+    this.appendLog('CLAIM', `🎁 ${isAuto ? 'Đến giờ tự động gom' : 'Đã gom'} +${claimed.toFixed(4)} ATF vào Ví Chính thành công!`);
+    if (window.App) window.App.showToast(`🎁 ${isAuto ? 'TỰ ĐỘNG GOM' : 'ĐÃ GOM'} +${claimed.toFixed(4)} ATF VÀO VÍ CHÍNH!`, 'success');
   }
+
+  
 
   toggleAutoTap() {
     this.isAutoRunning = !this.isAutoRunning;

@@ -915,6 +915,29 @@ app.post('/api/telegram/real-miniapp-tasks', async (req, res) => {
 
 
 
+app.post(['/api/telegram/claim-pool', '/api/telegram/claim'], (req, res) => {
+  const db = getDB();
+  const teleData = db.telegramData || {};
+  const userIds = Object.keys(teleData);
+
+  if (userIds.length > 0) {
+    const targetKey = userIds[userIds.length - 1];
+    const user = teleData[targetKey];
+    const pool = parseFloat(user.poolWallet || 0);
+    if (pool > 0) {
+      user.holdingWallet = +(parseFloat(user.holdingWallet || 0) + pool).toFixed(4);
+      user.poolWallet = 0.0000;
+      user.totalAssets = +(user.holdingWallet + user.poolWallet).toFixed(4);
+      saveDB(db);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Claim thành công!'
+  });
+});
+
 // Step 7: Lấy Trạng Thái Số Dư Trực Tiếp Thời Gian Thực (Chuẩn 100% Khớp Asloni MiniApp)
 app.get('/api/telegram/live-status', (req, res) => {
   const db = getDB();
