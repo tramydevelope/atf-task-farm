@@ -19,6 +19,18 @@
         "poolWallet": 500,
         "totalTaps": 1200
       }
+    },
+    {
+      "id": "usr_admin",
+      "username": "admin",
+      "password": "$2a$10$9UtPaGEjWv3fpVYCbYCK9.wH75J2e8gRraRJTN/6bNeq79wgmBXR.",
+      "role": "admin",
+      "createdAt": "2026-08-31T07:31:45.324Z",
+      "expiresAt": "2036-08-28T07:31:45.325Z",
+      "maxThreads": 50,
+      "boundHwid": null,
+      "boundIp": null,
+      "isBanned": false
     }
   ],
   "keys": [

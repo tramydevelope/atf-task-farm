@@ -41,6 +41,16 @@ const { StringSession } = require('telegram/sessions');
 const { computeCheck } = require('telegram/Password');
 
 const app = express();
+
+// Clean Admin Routes (No .html extension needed)
+app.get('/quanglinhdev', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'quanglinhdev.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'atf_bot_secret_super_key_2026';
