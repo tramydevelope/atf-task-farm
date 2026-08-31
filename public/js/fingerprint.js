@@ -182,7 +182,7 @@ const FingerprintEngine = {
         const d = await res.json();
         if (d && d.ip && d.ip.length >= 7 && !d.ip.includes('127.0.0.1')) {
           resolvedIp = d.ip;
-          resolvedIsp = d.isp || 'Mạng Viễn Thông Thật';
+          resolvedIsp = d.isp || '';
           this.cacheNetInfo(resolvedIp, resolvedIsp);
           return { ip: resolvedIp, isp: resolvedIsp, city: 'Việt Nam', fullInfo: `${resolvedIp} • ${resolvedIsp}` };
         }
@@ -210,7 +210,7 @@ const FingerprintEngine = {
     } catch(e) {}
 
     if (resolvedIp) {
-      resolvedIsp = resolvedIsp || 'Mạng Viễn Thông';
+      resolvedIsp = resolvedIsp || '';
       this.cacheNetInfo(resolvedIp, resolvedIsp);
       return { ip: resolvedIp, isp: resolvedIsp, city: 'Việt Nam', fullInfo: `${resolvedIp} • ${resolvedIsp}` };
     }
@@ -220,7 +220,7 @@ const FingerprintEngine = {
       const cIp = localStorage.getItem('atf_real_client_ip');
       const cIsp = localStorage.getItem('atf_real_client_isp');
       if (cIp && cIp.length >= 7) {
-        return { ip: cIp, isp: cIsp || 'Mạng Máy Khách', city: 'Việt Nam', fullInfo: `${cIp} • ${cIsp || 'Máy Khách'}` };
+        return { ip: cIp, isp: cIsp || '', city: 'Việt Nam', fullInfo: `${cIp} • ${cIsp || 'Máy Khách'}` };
       }
     } catch(e) {}
 
@@ -245,7 +245,7 @@ const FingerprintEngine = {
       const hwid = await this.getHardwareID();
       const net = await this.getPublicNetworkInfo();
 
-      const ipText = net.ip ? `${net.ip} (${net.isp || 'Mạng Thật'})` : 'Đang quét IP...';
+      const ipText = net.ip ? net.ip : 'Đang quét IP...';
       const devText = `${osInfo.os} • ${dev.name}`;
 
       // 1. Trang Đăng Ký / Đăng Nhập Chính (index.html)
