@@ -411,7 +411,7 @@ const App = {
         btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> XÁC THỰC & ĐĂNG NHẬP NGAY';
       }
     }
-  },,
+  },
 
     renderVerifiedTelegramSessions() {
     const sessions = this.teleBot ? this.teleBot.getLocalSessions() : {};
