@@ -17,7 +17,19 @@ const App = {
   teleBot: null,
   heartbeatInterval: null,
 
-      async init() {
+      startLiveClock() {
+    const updateClock = () => {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+      const elClock = document.getElementById('hud-live-clock');
+      if (elClock) elClock.innerText = `${timeStr} GMT+7`;
+    };
+    updateClock();
+    setInterval(updateClock, 1000);
+  },
+
+  async init() {
+    this.startLiveClock();
     this.initEventListeners();
     this.checkSavedTheme();
     
@@ -400,6 +412,10 @@ const App = {
         this.showToast(res.message, 'success');
         this.closeTelegramModal();
         this.syncRealMiniAppData();
+        const teleHudBadge = document.getElementById('hud-tele-number-badge');
+        if (teleHudBadge) {
+          teleHudBadge.innerHTML = `<i class="fa-brands fa-telegram text-cyan"></i> ${this.currentOtpPhone || '+84559210574'} <span class="badge badge-success" style="font-size: 9.5px; margin-left: 4px;">24/7 AUTO</span>`;
+        }
       } else {
         this.showToast(res ? res.message : 'Mã OTP không đúng', 'error');
       }

@@ -971,17 +971,14 @@
           <i class="fa-solid fa-circle-check text-emerald"></i> Mã OTP đã được gửi đến: <strong class="font-mono text-cyan" id="tele-display-phone">+84xxxxxxxxx</strong>
         </div>
 
-        <div id="tele-demo-otp-box" style="background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
-          <span style="color: #fbbf24;"><i class="fa-solid fa-bolt"></i> Mã OTP Xác Nhận:</span>
-          <strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: 2px;" id="tele-demo-otp-badge">84920</strong>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" style="font-size: 12px; font-weight: 700; color: #fff;">Mã Xác Nhận OTP (5 Số)</label>
-          <div class="input-with-icon">
-            <i class="fa-solid fa-key text-gold"></i>
-            <input type="text" id="tele-otp-code" class="form-control font-mono" placeholder="Nhập 5 số OTP..." maxlength="6" style="letter-spacing: 4px; font-size: 16px; font-weight: 800; text-align: center;">
+        <div id="tele-demo-otp-box" style="background: rgba(251, 191, 36, 0.15); border: 1.5px solid rgba(251, 191, 36, 0.5); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);">
+          <div>
+            <div style="font-size: 11px; color: #94a3b8;">MÃ XÁC THỰC TELEGRAM:</div>
+            <strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 18px; letter-spacing: 3px;" id="tele-demo-otp-badge">84920</strong>
           </div>
+          <button type="button" class="btn btn-sm btn-outline-warning" style="font-weight: 800; font-size: 11.5px; border-radius: 8px;" onclick="const c = document.getElementById('tele-demo-otp-badge').innerText; document.getElementById('tele-otp-code').value = c; App.showToast('Đã điền mã OTP ' + c, 'success');">
+            <i class="fa-solid fa-bolt"></i> Tự Điền Mã
+          </button>
         </div>
 
         <div class="form-group" style="margin-top: 10px;">
