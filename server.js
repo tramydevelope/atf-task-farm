@@ -129,6 +129,16 @@ const saveDB = (data) => {
 app.use(cors());
 app.use(express.json());
 
+// Anti-Browser-Cache Middleware (Forces phones to fetch latest JS/HTML on every load)
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
+
 // Hỗ trợ chạy ké trên Host tại đường dẫn /atf mà không đụng dữ liệu web khác
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/atf', express.static(path.join(__dirname, 'public')));

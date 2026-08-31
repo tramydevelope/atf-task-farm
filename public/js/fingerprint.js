@@ -267,7 +267,21 @@ const FingerprintEngine = {
     } catch(e) {}
   },
 
+  
+  // Tự động xóa cache cũ trên trình duyệt di động để đọc IP & HWID mới 100%
+  purgeLegacyCache() {
+    try {
+      const CURRENT_VER = 'v4.5.0';
+      if (localStorage.getItem('atf_app_ver') !== CURRENT_VER) {
+        localStorage.removeItem('atf_real_client_ip');
+        localStorage.removeItem('atf_real_client_isp');
+        localStorage.setItem('atf_app_ver', CURRENT_VER);
+      }
+    } catch(e) {}
+  },
+
   async autoScanAndPopulateUI() {
+    this.purgeLegacyCache();
     try {
       const dev = this.detectDeviceType();
       const osInfo = this.getOSAndBrowserInfo();
