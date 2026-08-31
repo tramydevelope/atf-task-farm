@@ -1180,18 +1180,30 @@ app.post('/api/auth/register', (req, res) => {
   const salt = bcrypt.genSaltSync(10);
   const passwordHash = bcrypt.hashSync(password, salt);
 
-  const newUser = {
-    id: 'usr_' + crypto.randomBytes(4).toString('hex'),
-    username: cleanUser,
-    password: passwordHash,
-    role: 'user',
-    createdAt: new Date().toISOString(),
-    expiresAt: null,
-    maxThreads: 0,
-    boundHwid: hwid || null,
-    boundIp: clientIp,
-    isBanned: false
-  };
+  
+    const newUser = {
+      id: 'user_' + crypto.randomBytes(4).toString('hex'),
+      username: username.trim(),
+      passwordHash: hashPassword(password),
+      role: 'user',
+      isApproved: false,
+      isExpired: true,
+      isBanned: false,
+      boundHwid: hwid || null,
+      boundIp: clientIp,
+      boundIsp: clientIsp || 'Viettel Telecom',
+      boundLocation: clientLocation || 'Việt Nam',
+      expiresAt: null,
+      maxThreads: 10,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      balance: {
+        totalAssets: 0.0000,
+        holdingWallet: 0.0000,
+        poolWallet: 0.0000,
+        totalTaps: 0
+      }
+    };
 
   db.users.push(newUser);
   saveDB(db);
@@ -1552,7 +1564,65 @@ app.delete(['/api/admin/keys/:id', '/api/admin/keys/:id/delete'], authenticateTo
   res.json({ success: true, message: 'Đã xóa Key thành công' });
 });
 
-app.get('/api/admin/users', authenticateToken, requireAdmin, (req, res) => {
+
+  // 1-Click Admin Quick Approval Endpoint
+  app.post(['/api/admin/users/approve', '/api/admin/users/:id/approve'], authenticateToken, requireAdmin, (req, res) => {
+    const userId = req.params.id || req.body.userId;
+    const days = parseInt(req.body.days) || 30;
+    const db = getDB();
+    const user = db.users.find(u => u.id === userId || u.username === userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản người dùng' });
+    }
+
+    const now = Date.now();
+    const expiryMs = now + (days * 24 * 60 * 60 * 1000);
+    user.isApproved = true;
+    user.isExpired = false;
+    user.expiresAt = new Date(expiryMs).toISOString();
+
+    saveDB(db);
+
+    res.json({
+      success: true,
+      message: `🎉 Đã Duyệt VIP thành công ${days} ngày cho tài khoản [@${user.username}]!`,
+      user
+    });
+  });
+
+  // Admin Quick Extend VIP Expiration Endpoint
+  app.post('/api/admin/users/extend', authenticateToken, requireAdmin, (req, res) => {
+    const { userId, days = 30 } = req.body;
+    const db = getDB();
+    const user = db.users.find(u => u.id === userId || u.username === userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+    }
+
+    const now = Date.now();
+    let currentExpiry = user.expiresAt ? new Date(user.expiresAt).getTime() : now;
+    if (isNaN(currentExpiry) || currentExpiry < now) {
+      currentExpiry = now;
+    }
+    const newExpiry = currentExpiry + (days * 24 * 60 * 60 * 1000);
+
+    user.isApproved = true;
+    user.isExpired = false;
+    user.expiresAt = new Date(newExpiry).toISOString();
+
+    saveDB(db);
+
+    res.json({
+      success: true,
+      message: `🎉 Đã cộng thêm ${days} ngày VIP cho tài khoản [@${user.username}]!`,
+      user
+    });
+  });
+
+
+  app.get('/api/admin/users', authenticateToken, requireAdmin, (req, res) => {
   const db = getDB();
   const sanitizedUsers = db.users.map(u => {
     let isExpired = true;
