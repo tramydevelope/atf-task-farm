@@ -1049,5 +1049,24 @@
       window.atfEngine.init();
     });
   </script>
-</body>
+<!-- Fail-proof Instant UI Scanner -->
+    <script>
+      (function() {
+        async function runScan() {
+          if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
+            await window.FingerprintEngine.autoScanAndPopulateUI();
+          }
+        }
+        runScan();
+        document.addEventListener('DOMContentLoaded', runScan);
+        window.addEventListener('load', runScan);
+        var count = 0;
+        var timer = setInterval(function() {
+          count++;
+          runScan();
+          if (count > 10) clearInterval(timer);
+        }, 350);
+      })();
+    </script>
+</body>>
 </html>

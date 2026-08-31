@@ -371,9 +371,35 @@ cacheNetInfo(resolvedIp, resolvedIsp);
 
 if (typeof window !== 'undefined') {
   window.FingerprintEngine = FingerprintEngine;
-  document.addEventListener('DOMContentLoaded', () => {
-    if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
-      window.FingerprintEngine.autoScanAndPopulateUI();
+
+  const triggerInstantScan = async () => {
+    try {
+      if (window.FingerprintEngine && window.FingerprintEngine.autoScanAndPopulateUI) {
+        return await window.FingerprintEngine.autoScanAndPopulateUI();
+      }
+    } catch(e) {
+      console.warn('Instant scan trigger error:', e);
     }
-  });
+  };
+
+  // 1. Run IMMEDIATELY when script file is evaluated by browser engine
+  triggerInstantScan();
+
+  // 2. Run on DOMContentLoaded if DOM is still parsing
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', triggerInstantScan);
+  }
+
+  // 3. Run on Window Load
+  window.addEventListener('load', triggerInstantScan);
+
+  // 4. Polling retry loop every 300ms for 4 seconds to guarantee UI updates
+  let attempts = 0;
+  const pollTimer = setInterval(async () => {
+    attempts++;
+    const res = await triggerInstantScan();
+    if ((res && res.ip && res.hwid) || attempts > 12) {
+      clearInterval(pollTimer);
+    }
+  }, 300);
 }
