@@ -151,20 +151,31 @@ app.get(['/quanglinhdev', '/atf/quanglinhdev', '/quanglinhdev.html', '/admin', '
 
 // Helper to get client IP with multi-source detection
 const getClientIp = (req) => {
+  // 1. Check Cloudflare Header (highest accuracy if behind Cloudflare)
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp && cfIp.trim().length > 6 && !cfIp.includes('127.0.0.1')) {
+    return cfIp.trim();
+  }
+
+  // 2. Check X-Forwarded-For (Standard Reverse Proxy Header on Render / Nginx)
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const ips = forwarded.split(',').map(s => s.trim()).filter(ip => ip && !ip.includes('127.0.0.1') && !ip.startsWith('::ffff:127.'));
+    if (ips.length > 0) return ips[0];
+  }
+
+  // 3. Check Real IP Header
+  const realIp = req.headers['x-real-ip'];
+  if (realIp && realIp.trim().length > 6 && !realIp.includes('127.0.0.1')) {
+    return realIp.trim();
+  }
+
+  // 4. Check client-reported IP from request body
   if (req.body && req.body.clientIp && req.body.clientIp.length > 6 && !req.body.clientIp.includes('127.0.0.1')) {
     return req.body.clientIp;
   }
-  const cfIp = req.headers['cf-connecting-ip'];
-  if (cfIp) return cfIp.trim();
 
-  const realIp = req.headers['x-real-ip'];
-  if (realIp) return realIp.trim();
-
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-
+  // 5. Check direct socket connection IP
   let ip = req.socket?.remoteAddress || req.ip || '127.0.0.1';
   if (ip.startsWith('::ffff:')) {
     ip = ip.replace('::ffff:', '');
