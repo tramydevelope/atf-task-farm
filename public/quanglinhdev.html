@@ -1128,20 +1128,23 @@
             </td>
             <td>
               <select id="approve-days-${u.userId}" class="form-ctrl" style="padding: 6px 10px; font-size: 12px; border-color: rgba(251, 191, 36, 0.4);">
+                <option value="30" selected>30 Ngày VIP (1 Tháng)</option>
                 <option value="1">1 Ngày VIP (Dùng thử)</option>
                 <option value="7">7 Ngày VIP (1 Tuần)</option>
-                <option value="30" selected>30 Ngày VIP (1 Tháng)</option>
                 <option value="90">90 Ngày VIP (3 Tháng)</option>
                 <option value="365">365 Ngày VIP (1 Năm)</option>
                 <option value="9999">Vĩnh Viễn (Lifetime)</option>
               </select>
             </td>
             <td>
-              <div style="display: flex; gap: 6px;">
-                <button class="btn-tool btn-tool-success" onclick="approveUser('${u.userId}', '${u.username}')" style="font-weight: 800; padding: 6px 12px;">
-                  <i class="fa-solid fa-check-circle"></i> Duyệt & Cấp Key
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="btn-tool btn-tool-success" onclick="approveUser('${u.userId}', '${u.username}', 'with_key')" style="font-weight: 800; padding: 6px 10px;" title="Duyệt và tự động cấp Key VIP">
+                  <i class="fa-solid fa-bolt"></i> Duyệt + Cấp Key
                 </button>
-                <button class="btn-tool btn-tool-danger" onclick="rejectUser('${u.userId}', '${u.username}')" style="padding: 6px 10px;" title="Từ chối đăng ký">
+                <button class="btn-tool btn-tool-info" onclick="approveUser('${u.userId}', '${u.username}', 'approve_only')" style="font-weight: 700; padding: 6px 10px;" title="Duyệt tài khoản (Yêu cầu khách tự nhập Key VIP)">
+                  <i class="fa-solid fa-user-check"></i> Duyệt (Chờ Nhập Key)
+                </button>
+                <button class="btn-tool btn-tool-danger" onclick="rejectUser('${u.userId}', '${u.username}')" style="padding: 6px 8px;" title="Từ chối đăng ký">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
@@ -1151,8 +1154,8 @@
       }).join('');
     }
 
-    // 12. Approve User
-    async function approveUser(userId, username) {
+    // 12. Approve User (Supports 'with_key' or 'approve_only')
+    async function approveUser(userId, username, mode = 'with_key') {
       const daysEl = document.getElementById(`approve-days-${userId}`);
       const days = daysEl ? parseInt(daysEl.value) : 30;
 
@@ -1161,16 +1164,19 @@
         const res = await fetch(`${basePath}/api/admin/approve-user`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: userId, username: username, days: days, threads: 20 })
+          body: JSON.stringify({ userId: userId, username: username, mode: mode, days: days, threads: 20 })
         });
         const data = await res.json();
         if (data && data.success) {
           showToast(data.message, 'success');
           loadDashboardData();
         } else {
-          showToast(data.message || 'Lỗi khi phê duyệt', 'error');
+          showToast(data ? data.message : 'Lỗi khi phê duyệt', 'error');
         }
       } catch(e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    } catch(e) {
         showToast('Lỗi kết nối máy chủ', 'error');
       }
     }
