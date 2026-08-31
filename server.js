@@ -164,7 +164,7 @@ const getClientIp = (req) => {
     return forwarded.split(',')[0].trim();
   }
 
-  let ip = req.socket?.remoteAddress || req.ip || '116.98.234.129';
+  let ip = req.socket?.remoteAddress || req.ip || '127.0.0.1';
   if (ip.startsWith('::ffff:')) {
     ip = ip.replace('::ffff:', '');
   }

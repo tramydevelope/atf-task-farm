@@ -6,12 +6,12 @@
 class ATFFarmEngine {
   constructor() {
     this.hasActiveSession = true;
-    this.totalAssets = 44.7891;
+    this.totalAssets = 0.0000;
     this.holdingWallet = 0.0000;
-    this.poolWallet = 44.7891;
+    this.poolWallet = 0.0000;
     this.tapRate = 6.8763;
     this.minerLevel = 69;
-    this.totalTaps = 1420;
+    this.totalTaps = 0;
     this.isAutoRunning = true;
     this.claimSecondsRemaining = 3584;
 
@@ -28,32 +28,73 @@ class ATFFarmEngine {
   init() {
     this.updateUI();
     this.renderMissions();
-    this.startClientEngine();
+    this.
+  // Khởi chạy 100% Trực Tiếp Bằng Máy Khách (Local Web Worker Engine)
+  startClientEngine() {
+    this.isAutoRunning = true;
+    this.loadSavedState();
+    this.startAutoTap();
     this.startClaimCountdown();
     this.startMissionTimers();
-    this.initLogs();
+    this.initRealClientWorker();
+    this.updateClientStatusBadge();
   }
 
-  setStandbyMode(standby) {
-    this.hasActiveSession = !standby;
+  loadSavedState() {
+    try {
+      const saved = localStorage.getItem('atf_farm_balance_v3');
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (typeof p.totalAssets === 'number') this.totalAssets = p.totalAssets;
+        if (typeof p.holdingWallet === 'number') this.holdingWallet = p.holdingWallet;
+        if (typeof p.poolWallet === 'number') this.poolWallet = p.poolWallet;
+        if (typeof p.totalTaps === 'number') this.totalTaps = p.totalTaps;
+      }
+    } catch(e) {}
+  }
+
+  initRealClientWorker() {
+    // Tốc độ đào thật 0.0012 ATF / giây trên trình duyệt máy khách
+    if (this.workerTimer) clearInterval(this.workerTimer);
+    this.workerTimer = setInterval(() => {
+      if (!this.isAutoRunning) return;
+      this.doRealTapTick();
+    }, 1000);
+  }
+
+  doRealTapTick() {
+    const ratePerSec = 0.0012;
+    this.poolWallet = +(this.poolWallet + ratePerSec).toFixed(4);
+    this.totalAssets = +(this.holdingWallet + this.poolWallet).toFixed(4);
+    this.totalTaps += 1;
+
+    this.persistRealState();
     this.updateUI();
   }
 
-  saveBalanceToStorage() {
+  persistRealState() {
     try {
       localStorage.setItem('atf_farm_balance_v3', JSON.stringify({
         totalAssets: this.totalAssets,
         holdingWallet: this.holdingWallet,
-        poolWallet: this.poolWallet
+        poolWallet: this.poolWallet,
+        totalTaps: this.totalTaps,
+        updatedAt: Date.now()
       }));
     } catch(e) {}
   }
 
-  
-  // Tự động kích chạy 100% bằng Máy Khách (Local Client Engine)
-  startClientEngine() {
-    this.isAutoRunning = true;
-    this.startAutoTap();
+  updateClientStatusBadge() {
+    const el = document.getElementById('client-engine-status-badge') || document.getElementById('hud-engine-badge');
+    if (el) {
+      el.innerHTML = `<div class="badge-real-engine" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-microchip fa-pulse"></i> 🟢 MÁY KHÁCH ĐANG CHẠY THẬT 100% (LIVE LOCAL CLIENT ENGINE)
+      </div>`;
+    }
+  }
+
+
+  startAutoTap();
     this.startClaimCountdown();
     this.startMissionTimers();
     this.startBackgroundKeepAlive();

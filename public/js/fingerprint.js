@@ -289,11 +289,11 @@ if (typeof window !== 'undefined') {
     } catch (e) {}
 
     return {
-      ip: '116.98.234.129',
+      ip: '',
       isp: 'Viettel Group',
       city: 'Hà Nội',
       country: 'Việt Nam',
-      fullInfo: '116.98.234.129 • Viettel Group (Hà Nội)'
+      fullInfo: ' • Viettel Group (Hà Nội)'
     };
   }
 
