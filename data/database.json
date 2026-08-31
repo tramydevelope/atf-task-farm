@@ -1,0 +1,89 @@
+{
+  "users": [
+    {
+      "id": "usr_admin",
+      "username": "admin",
+      "password": "$2a$10$dyDfoobsbajcTXkgV1HI2.vDzmSUkI6LvAAbrZQth8gLVqOEAkNc.",
+      "role": "admin",
+      "createdAt": "2026-08-30T13:56:27.323Z",
+      "expiresAt": "2036-08-28T02:38:44.502Z",
+      "maxThreads": 50,
+      "boundHwid": null,
+      "boundIp": "116.98.234.129",
+      "isBanned": false,
+      "lastActiveAt": "2026-08-31T02:31:53.228Z"
+    },
+    {
+      "id": "usr_da77c6ac",
+      "username": "linh9988",
+      "password": "$2a$10$dyDfoobsbajcTXkgV1HI2.vDzmSUkI6LvAAbrZQth8gLVqOEAkNc.",
+      "role": "user",
+      "createdAt": "2026-08-30T13:57:38.963Z",
+      "expiresAt": "2026-09-30T02:38:44.502Z",
+      "maxThreads": 20,
+      "boundHwid": "HWID-TEST",
+      "boundIp": "116.98.234.129",
+      "isBanned": false,
+      "lastActiveAt": "2026-08-31T02:46:58.984Z",
+      "lastLoginAt": "2026-08-31T02:45:28.967Z"
+    }
+  ],
+  "keys": [
+    {
+      "id": "key_659dad01",
+      "code": "ATF-C7A3-94CC-CE6D",
+      "key": "ATF-C7A3-94CC-CE6D",
+      "durationDays": 30,
+      "maxThreads": 20,
+      "note": "Khách VIP Zalo Linh",
+      "status": "used",
+      "createdAt": "2026-08-31T00:50:33.137Z",
+      "createdBy": "admin",
+      "usedBy": "usr_78d4962a",
+      "usedByUsername": "khach_hang_demo",
+      "usedAt": "2026-08-31T00:50:40.741Z",
+      "boundHwid": "HWID-REAL-CLIENT-PC-7788",
+      "boundIp": "116.98.234.129 • Viettel Group (Hà Nội)"
+    },
+    {
+      "id": "key_cf88b85a",
+      "code": "ATF-3469-6DD3-AE05",
+      "key": "ATF-3469-6DD3-AE05",
+      "durationDays": 30,
+      "maxThreads": 10,
+      "note": "Khách Vip Zalo",
+      "status": "unused",
+      "createdAt": "2026-08-31T00:42:22.229Z",
+      "createdBy": "admin",
+      "usedBy": null,
+      "usedByUsername": null,
+      "usedAt": null,
+      "boundHwid": null,
+      "boundIp": null
+    }
+  ],
+  "sessions": [],
+  "telegramData": {
+    "8251830594": {
+      "holdingWallet": 68.547,
+      "poolWallet": 0,
+      "totalAssets": 577.0143,
+      "level": 71,
+      "tapRate": 6.8763,
+      "sessionToken": "eyJ0Z19pZCI6IjgyNTE4MzA1OTQiLCJpaCI6ImM0OTVjYWNjOWU1MDA5OTZhODAwOWQyNzE0MjhhZDI4MWFiYmM3YmQ2ZmViZjM0Mjk3MTg2ODNmYzdjNGMwOTgiLCJ1YSI6IiIsImhzdCI6ImF0Zm1pbmVycy5hc2xvbmkub25saW5lIiwiaWF0IjoxNzg4MTA5MTAxLCJleHAiOjE3ODgyODE5MDF9.4ktyX8dWPINwKw657TY45AfHNHMyPlCGiAvsOM2g9PY",
+      "initData": "query_id=AAFC8dhrAwAAAELx2Gtjbbdy&user=%7B%22id%22%3A8251830594%2C%22first_name%22%3A%22MAKER%20MONEY%20%F0%9F%94%A5%F0%9F%91%91%20%40KhoBauCaTaskfarmBot%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22makemoneyonliranh%22%2C%22language_code%22%3A%22vi%22%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FmDTv_MMqzvSmD2lekzU0tqk_e-C_yAeTc9H4qtU-GUYFKGEsZ55rBzfuJ-nKVdk5.svg%22%7D&auth_date=1788109100&signature=TRcTE94e5fS857LxncPuC6VVOK2CQ5OAKUMbRBb4hhrppg7JPMx0ixulEpgbWFdrOZe5wCBlif7WqdLSVOCWBQ&hash=8c1b4e61e7bf72564f0d96b763015c75dbdf931b2eddc9520c1048ebaabd67e7",
+      "deviceId": "dev_m5vx83b4u4w4ucxd1vcsi",
+      "taskCooldowns": {
+        "telegram_react_latest": 1788158963,
+        "website_visit": 1788158953,
+        "youtube_like_comment": 1788158925,
+        "twitter_retweet": 1788158933
+      },
+      "ownerUserId": "usr_da77c6ac",
+      "ownerUsername": "linh9988",
+      "status": "running_247",
+      "lastTaskEarnedAt": "2026-08-31T06:11:40.154Z",
+      "minedBalance": 44.7891
+    }
+  }
+}

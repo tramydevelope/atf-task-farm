@@ -1,0 +1,539 @@
+/* ==========================================================================
+   MODERN LUXURY WEB3 & SAAS DASHBOARD THEME (SIÊU ĐẸP & CHUYÊN NGHIỆP)
+   ========================================================================== */
+
+.modern-dashboard-layout {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 0 30px 0;
+}
+
+/* 1. HERO PROFILE & ENVIRONMENT BANNER */
+.hero-profile-banner {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 242, 254, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-profile-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%; right: -20%;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.user-identity-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-avatar-hex {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #000;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+}
+
+.user-meta-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-meta-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.env-pills-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.env-pill-item {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 2. TOP KPI CARDS GRID (4 CỘT HIỆN ĐẠI) */
+.kpi-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px 20px;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 242, 254, 0.35);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.15);
+}
+
+.kpi-card-glow-gold {
+  border-color: rgba(251, 191, 36, 0.35);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 20px rgba(251, 191, 36, 0.1);
+}
+
+.kpi-card-glow-gold:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 30px rgba(251, 191, 36, 0.25);
+}
+
+.kpi-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kpi-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.kpi-big-value {
+  font-size: 24px;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.kpi-unit {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.kpi-sub-text {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   3. TRUNG TÂM TỰ ĐỘNG TAP CHỮ ATF & CLAIM VÀNG KIM 3D (INTERACTIVE STAGE)
+   ========================================================================== */
+.atf-mining-stage-card {
+  background: radial-gradient(circle at 50% 30%, rgba(251, 191, 36, 0.15) 0%, rgba(15, 23, 42, 0.95) 75%);
+  border: 1.5px solid rgba(251, 191, 36, 0.45);
+  border-radius: 24px;
+  padding: 26px 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(251, 191, 36, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.mining-stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 580px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 3D EMBOSSED GOLD ATF COIN (CHUẨN ẢNH THẬT 100%) */
+.atf-coin-container-3d {
+  position: relative;
+  width: 210px;
+  height: 210px;
+  margin: 10px 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.atf-real-gold-coin {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff2a3 0%, #ffd000 25%, #e6a800 50%, #b37400 85%, #663d00 100%);
+  box-shadow: 
+    0 0 65px rgba(255, 187, 0, 0.65),
+    0 15px 35px rgba(0, 0, 0, 0.9),
+    inset 0 3px 8px rgba(255, 255, 255, 0.8),
+    inset 0 -6px 14px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.atf-real-gold-coin:active {
+  transform: scale(0.94);
+}
+
+.coin-outer-ribs {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 4px dashed rgba(255, 230, 100, 0.7);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+
+.coin-textured-core {
+  width: 166px;
+  height: 166px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffd943 0%, #e6a800 45%, #995c00 100%);
+  border: 3px solid rgba(255, 240, 150, 0.6);
+  box-shadow: inset 0 3px 10px rgba(255, 255, 255, 0.6), inset 0 -4px 10px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* CHỮ ATF 3D DẬP NỔI */
+.coin-atf-text {
+  font-size: 54px;
+  font-weight: 900;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: 2px;
+  background: linear-gradient(180deg, #4d3305 0%, #2b1d03 70%, #170d00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(255, 220, 80, 0.6));
+  position: relative;
+  z-index: 2;
+}
+
+/* TIA SÁNG AUTO TAP CHẠM VÀO CHỮ ATF */
+.auto-tap-spark-target {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #00ffaa;
+  box-shadow: 0 0 15px #00ffaa, inset 0 0 10px #00ffaa;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: all 0.25s ease-out;
+  z-index: 10;
+}
+
+.auto-tap-spark-target.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.4);
+}
+
+/* NÚT CLAIM VÀNG CAM NỔI BẬT TRÊN BỤC ÁNH SÁNG */
+.claim-stage-podium {
+  width: 100%;
+  max-width: 580px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-real-claim-gold {
+  width: 100%;
+  background: linear-gradient(180deg, #ffcc00 0%, #ff9900 100%);
+  color: #000000;
+  border: none;
+  padding: 16px 24px;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 
+    0 10px 30px rgba(255, 170, 0, 0.6),
+    inset 0 2px 6px rgba(255, 255, 255, 0.7);
+  transition: all 0.15s;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.btn-real-claim-gold:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 35px rgba(255, 170, 0, 0.8);
+}
+
+.btn-real-claim-gold:active {
+  transform: scale(0.98);
+}
+
+/* 4. 5 ACC FARM MULTI-ACCOUNT TILES GRID */
+.section-panel-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.section-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.section-panel-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.acc-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.acc-tile-item {
+  background: rgba(10, 16, 32, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.acc-tile-item.active {
+  border-color: rgba(0, 242, 254, 0.4);
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.08), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.1);
+}
+
+.acc-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.acc-tile-name {
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.acc-tile-balance {
+  font-size: 16px;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.acc-tile-footer {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+/* 5. DASHBOARD SPLIT 2-COLUMN (TASKS & LIVE LOGS) */
+.dashboard-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 880px) {
+  .dashboard-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.task-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.earn-reward-task-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 12, 24, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.earn-reward-task-card:hover {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+  border-color: rgba(255, 208, 0, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 208, 0, 0.15);
+}
+
+.task-squircle-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.1);
+}
+
+.btn-task-go-gold {
+  background: linear-gradient(180deg, #ffea79 0%, #ffd000 50%, #e6a800 100%);
+  color: #000000;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 13.5px;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 208, 0, 0.45);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-task-go-gold:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(255, 208, 0, 0.7);
+}
+
+.btn-task-go-gold:active {
+  transform: scale(0.96);
+}
+
+.btn-task-cooldown {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 12.5px;
+  border-radius: 9999px;
+  padding: 8px 18px;
+  cursor: not-allowed;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.3px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+  transition: all 0.2s;
+}
+
+.modern-task-row {
+  background: rgba(10, 16, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.modern-task-row:hover {
+  background: rgba(10, 16, 32, 0.9);
+  border-color: rgba(0, 242, 254, 0.25);
+}
+
+.modern-logs-terminal {
+  background: #030712;
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  height: 220px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+.modern-logs-terminal::-webkit-scrollbar { width: 5px; }
+.modern-logs-terminal::-webkit-scrollbar-track { background: transparent; }
+.modern-logs-terminal::-webkit-scrollbar-thumb { background: #00ff88; border-radius: 3px; }

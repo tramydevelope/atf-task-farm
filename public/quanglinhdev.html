@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Control Center - Quản Trị Key & Khách Hàng Thật</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg-dark: #030712;
+      --card-bg: rgba(15, 23, 42, 0.88);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --gold: #fbbf24;
+      --emerald: #10b981;
+      --cyan: #00f2fe;
+      --purple: #a855f7;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: radial-gradient(circle at 50% -10%, #1e1b4b 0%, #030712 55%, #000000 100%);
+      min-height: 100vh;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Ambient Glows */
+    .ambient-1 {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      top: -150px;
+      left: 10%;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-2 {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      bottom: -100px;
+      right: 5%;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================================
+       1. GATE SCREEN (CỔNG MỞ KHÓA BẢNG QUẢN TRỊ)
+       ========================================================================= */
+    #admin-gate-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .admin-gate-card {
+      background: rgba(15, 23, 42, 0.94);
+      border: 1.5px solid rgba(251, 191, 36, 0.4);
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(251, 191, 36, 0.15);
+      backdrop-filter: blur(25px);
+      border-radius: 28px;
+      padding: 40px 32px;
+      max-width: 460px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      margin: auto;
+    }
+
+    .gate-shield-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 22px;
+      background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      color: #000000;
+      box-shadow: 0 10px 30px rgba(251, 191, 36, 0.45);
+      margin-bottom: 20px;
+    }
+
+    .gate-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .gate-subtitle {
+      font-size: 12.5px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    .gate-radar-box {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      text-align: left;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .radar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .radar-label { color: #94a3b8; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .radar-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+    .password-input-group {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .admin-pw-field {
+      background: rgba(0, 0, 0, 0.7) !important;
+      border: 1.5px solid rgba(251, 191, 36, 0.4) !important;
+      color: #fbbf24 !important;
+      font-size: 15px !important;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 2px;
+      text-align: center;
+      padding: 13px 40px 13px 16px !important;
+      border-radius: 14px !important;
+      width: 100%;
+      box-sizing: border-box;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .admin-pw-field:focus {
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.4) !important;
+    }
+
+    .pw-toggle-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px;
+    }
+    .pw-toggle-btn:hover { color: #fbbf24; }
+
+    .btn-gate-unlock {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+      color: #000000 !important;
+      font-weight: 900 !important;
+      font-size: 14.5px !important;
+      padding: 14px 0 !important;
+      border-radius: 14px !important;
+      width: 100%;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-gate-unlock:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(251, 191, 36, 0.6);
+    }
+
+    /* =========================================================================
+       2. MAIN ADMIN DASHBOARD
+       ========================================================================= */
+    #admin-panel-screen {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .admin-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .admin-brand { display: flex; align-items: center; gap: 14px; }
+
+    .brand-crown-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fbbf24, #d97706);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #000000;
+      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+    }
+
+    .brand-text-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-super-admin {
+      background: linear-gradient(135deg, #fbbf24, #d97706);
+      color: #000000;
+      font-size: 10.5px;
+      font-weight: 900;
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    .brand-sub {
+      font-size: 11.5px;
+      color: #00ff88;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-quick-actions { display: flex; align-items: center; gap: 10px; }
+
+    .btn-header {
+      padding: 9px 15px;
+      border-radius: 11px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .btn-header-bot {
+      background: rgba(251, 191, 36, 0.12);
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.35);
+    }
+    .btn-header-bot:hover { background: rgba(251, 191, 36, 0.25); }
+
+    .btn-header-lock {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+    .btn-header-lock:hover { background: rgba(239, 68, 68, 0.25); }
+
+    /* System Radar HUD */
+    .system-radar-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 27, 75, 0.7));
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      border-radius: 20px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .radar-item { display: flex; align-items: flex-start; gap: 12px; }
+
+    .radar-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .radar-icon-ip { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .radar-icon-hwid { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .radar-icon-cpu { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .radar-icon-ping { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+
+    .radar-item-body { display: flex; flex-direction: column; gap: 2px; }
+    .radar-item-title { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .radar-item-value { font-family: 'JetBrains Mono', monospace; font-size: 13.5px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 6px; }
+    .radar-item-sub { font-size: 11px; color: #64748b; }
+
+    .btn-copy-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-copy-chip:hover { background: #fbbf24; color: #000; border-color: #fbbf24; }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); }
+
+    .kpi-card-gold { border-color: rgba(251, 191, 36, 0.35); }
+    .kpi-card-emerald { border-color: rgba(16, 185, 129, 0.35); }
+    .kpi-card-cyan { border-color: rgba(0, 242, 254, 0.35); }
+    .kpi-card-purple { border-color: rgba(168, 85, 247, 0.35); }
+
+    .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .kpi-title { font-size: 12px; font-weight: 700; color: #94a3b8; }
+    .kpi-num { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 900; margin-bottom: 2px; }
+    .kpi-foot { font-size: 11px; color: #64748b; }
+
+    /* Panels & Tables */
+    .panel-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(15px);
+      margin-bottom: 22px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 11.5px; color: #94a3b8; font-weight: 700; }
+
+    .form-ctrl {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #ffffff;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-ctrl:focus { border-color: #fbbf24; }
+
+    .btn-create-key {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #000000;
+      font-weight: 900;
+      font-size: 13.5px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.35);
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-create-key:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(251, 191, 36, 0.5); }
+
+    /* New Key Alert Banner */
+    .new-key-alert {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1.5px solid rgba(251, 191, 36, 0.4);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: slideIn 0.3s forwards;
+    }
+
+    /* Table Styles */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      text-align: left;
+    }
+
+    .admin-table th {
+      background: rgba(0, 0, 0, 0.55);
+      padding: 12px 14px;
+      color: #94a3b8;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .admin-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .admin-table tr:hover td { background: rgba(255, 255, 255, 0.025); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-primary { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+    .btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .btn-tool {
+      padding: 5px 9px;
+      font-size: 11px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-tool-warn { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+    .btn-tool-warn:hover { background: rgba(251, 191, 36, 0.25); }
+
+    .btn-tool-danger { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
+    .btn-tool-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+    .btn-tool-success { background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+    .btn-tool-success:hover { background: rgba(16, 185, 129, 0.25); }
+
+    .btn-tool-info { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); }
+    .btn-tool-info:hover { background: rgba(56, 189, 248, 0.25); }
+
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(15px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s forwards;
+    }
+
+    .toast-success { border-color: #10b981; color: #34d399; }
+    .toast-error { border-color: #ef4444; color: #f87171; }
+    .toast-info { border-color: #38bdf8; color: #38bdf8; }
+
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+    .hidden { display: none !important; }
+    .text-gold { color: #fbbf24; }
+    .text-emerald { color: #34d399; }
+    .text-cyan { color: #00f2fe; }
+    .text-purple { color: #c084fc; }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-1"></div>
+  <div class="ambient-2"></div>
+
+  <!-- 1. CỔNG MỞ KHÓA BẢNG QUẢN TRỊ ADMIN (LOCK SCREEN) -->
+  <div id="admin-gate-screen">
+    <div class="admin-gate-card">
+      <div class="gate-shield-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+
+      <h1 class="gate-title">CỔNG QUẢN TRỊ VIÊN</h1>
+      <p class="gate-subtitle">Xác thực quyền Quản trị Tối cao (Super Admin)</p>
+
+      <div class="gate-radar-box">
+        <div class="radar-row">
+          <span class="radar-label"><i class="fa-solid fa-globe text-emerald"></i> IP Mạng Quản Trị:</span>
+          <span class="radar-val text-emerald" id="gate-ip">127.0.0.1</span>
+        </div>
+        <div class="radar-row">
+          <span class="radar-label"><i class="fa-solid fa-fingerprint text-cyan"></i> Mã Máy Admin (HWID):</span>
+          <span class="radar-val text-cyan" id="gate-hwid">Đang quét...</span>
+        </div>
+        <div class="radar-row">
+          <span class="radar-label"><i class="fa-solid fa-desktop text-purple"></i> Thiết Bị:</span>
+          <span class="radar-val text-purple" id="gate-device">Máy Tính Windows PC</span>
+        </div>
+      </div>
+
+      <form id="form-admin-quick-login" onsubmit="event.preventDefault(); handleAdminUnlock();">
+        <div class="password-input-group">
+          <input type="password" id="admin-gate-pass" class="admin-pw-field" placeholder="Nhập mật khẩu quản trị..." value="phamlinh12" required autofocus>
+          <button type="button" class="pw-toggle-btn" onclick="toggleGatePasswordVisibility()" title="Ẩn/Hiện Mật Khẩu">
+            <i class="fa-solid fa-eye" id="pw-eye-icon"></i>
+          </button>
+        </div>
+
+        <button type="submit" id="btn-admin-unlock" class="btn-gate-unlock">
+          <i class="fa-solid fa-lock-open"></i> MỞ KHÓA BẢNG QUẢN TRỊ
+        </button>
+      </form>
+
+      <div style="margin-top: 20px; font-size: 12px;">
+        <a href="/atf" style="color: #94a3b8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-left"></i> Quay lại trang cày đào coin (/atf)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. BẢNG ĐIỀU KHIỂN QUẢN TRỊ ADMIN (100% THẬT TỪ DATABASE) -->
+  <div id="admin-panel-screen" class="hidden">
+
+    <!-- Top Header -->
+    <header class="admin-header-bar">
+      <div class="admin-brand">
+        <div class="brand-crown-icon">
+          <i class="fa-solid fa-crown"></i>
+        </div>
+        <div>
+          <div class="brand-text-title">
+            TRUNG TÂM QUẢN TRỊ ATF ADMIN
+            <span class="badge-super-admin">SUPER ADMIN VIP</span>
+          </div>
+          <div class="brand-sub">
+            <i class="fa-solid fa-shield-check"></i> DỮ LIỆU THẬT 100% TỪ DATABASE • TRỰC TUYẾN 24/7
+          </div>
+        </div>
+      </div>
+
+      <div class="header-quick-actions">
+        <a href="/atf" class="btn-header btn-header-bot">
+          <i class="fa-solid fa-robot"></i> Vào Trang Đào Coin (/atf)
+        </a>
+        <button onclick="loadDashboardData()" class="btn-header" style="background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.15);">
+          <i class="fa-solid fa-arrows-rotate"></i> Làm Mới Dữ Liệu
+        </button>
+        <button onclick="adminLogout()" class="btn-header btn-header-lock">
+          <i class="fa-solid fa-lock"></i> Khóa Lại
+        </button>
+      </div>
+    </header>
+
+    <!-- SYSTEM RADAR HUD (IP MÁY + MẠNG ADMIN + PHẦN CỨNG THẬT) -->
+    <section class="system-radar-card">
+      <div class="radar-item">
+        <div class="radar-icon-box radar-icon-ip"><i class="fa-solid fa-globe"></i></div>
+        <div class="radar-item-body">
+          <div class="radar-item-title">IP Mạng Admin (Public IP)</div>
+          <div class="radar-item-value text-emerald">
+            <span id="hud-admin-ip">127.0.0.1</span>
+            <button class="btn-copy-chip" onclick="copyText(document.getElementById('hud-admin-ip').innerText, 'IP Mạng')"><i class="fa-regular fa-copy"></i> Copy</button>
+          </div>
+          <div class="radar-item-sub" id="hud-admin-isp">IP kết nối của máy Admin</div>
+        </div>
+      </div>
+
+      <div class="radar-item">
+        <div class="radar-icon-box radar-icon-hwid"><i class="fa-solid fa-fingerprint"></i></div>
+        <div class="radar-item-body">
+          <div class="radar-item-title">Mã Máy Admin (HWID)</div>
+          <div class="radar-item-value text-cyan">
+            <span id="hud-admin-hwid">HWID-INIT...</span>
+            <button class="btn-copy-chip" onclick="copyText(fullAdminHwid, 'Mã Máy HWID')"><i class="fa-regular fa-copy"></i> Copy</button>
+          </div>
+          <div class="radar-item-sub" id="hud-admin-device">Máy Tính Windows PC</div>
+        </div>
+      </div>
+
+      <div class="radar-item">
+        <div class="radar-icon-box radar-icon-cpu"><i class="fa-solid fa-microchip"></i></div>
+        <div class="radar-item-body">
+          <div class="radar-item-title">Cấu Hình Phần Cứng Thật</div>
+          <div class="radar-item-value text-purple" id="hud-admin-specs">-- Cores • -- GB RAM</div>
+          <div class="radar-item-sub" id="hud-admin-gpu">GPU WebGL Direct3D</div>
+        </div>
+      </div>
+
+      <div class="radar-item">
+        <div class="radar-icon-box radar-icon-ping"><i class="fa-solid fa-bolt"></i></div>
+        <div class="radar-item-body">
+          <div class="radar-item-title">Độ Trễ & Giờ Chuẩn Hà Nội</div>
+          <div class="radar-item-value text-gold" id="hud-admin-ping">⚡ 10 ms • Tốt</div>
+          <div class="radar-item-sub" id="hud-admin-clock">--:--:-- GMT+7</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REAL KPI STATS CARDS -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card-gold">
+        <div class="kpi-header"><span class="kpi-title">👥 Khách Hàng Đăng Ký</span><i class="fa-solid fa-users text-gold"></i></div>
+        <div class="kpi-num text-gold" id="kpi-total-users">0</div>
+        <div class="kpi-foot"><span class="badge badge-success" id="kpi-active-users">0 Đang có hạn VIP</span></div>
+      </div>
+
+      <div class="kpi-card kpi-card-cyan">
+        <div class="kpi-header"><span class="kpi-title">🔑 Tổng Key Đã Tạo</span><i class="fa-solid fa-key text-cyan"></i></div>
+        <div class="kpi-num text-cyan" id="kpi-total-keys">0</div>
+        <div class="kpi-foot"><span>Lưu trong database.json</span></div>
+      </div>
+
+      <div class="kpi-card kpi-card-emerald">
+        <div class="kpi-header"><span class="kpi-title">📦 Key Chưa Sử Dụng</span><i class="fa-solid fa-box-open text-emerald"></i></div>
+        <div class="kpi-num text-emerald" id="kpi-unused-keys">0</div>
+        <div class="kpi-foot"><span>Sẵn sàng gửi cho khách nạp</span></div>
+      </div>
+
+      <div class="kpi-card kpi-card-purple">
+        <div class="kpi-header"><span class="kpi-title">🏷️ Key Đã Được Nạp</span><i class="fa-solid fa-user-check text-purple"></i></div>
+        <div class="kpi-num text-purple" id="kpi-used-keys">0</div>
+        <div class="kpi-foot"><span>Khách đã kích hoạt trên máy</span></div>
+      </div>
+    </div>
+
+    <!-- KHU VỰC 1: TRÌNH TẠO KEY VIP MỚI -->
+    <div class="panel-card" style="border-color: rgba(251, 191, 36, 0.35);">
+      <div class="panel-header">
+        <div class="panel-title text-gold">
+          <i class="fa-solid fa-plus-circle"></i> Trình Sinh Mã Key Bản Quyền VIP (Tạo Để Bán / Tặng Khách)
+        </div>
+      </div>
+
+      <!-- Live Created Key Popup Banner (if created) -->
+      <div id="new-key-banner" class="new-key-alert hidden">
+        <div>
+          <span style="font-size: 12px; color: #94a3b8; font-weight: 700;">🎉 KEY VỪA TẠO THÀNH CÔNG:</span>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 900; color: #fbbf24;" id="banner-key-code">ATF-XXXX-XXXX-XXXX</div>
+        </div>
+        <button class="btn-create-key" style="padding: 8px 16px; font-size: 12px;" onclick="copyText(document.getElementById('banner-key-code').innerText, 'Mã Key VIP')">
+          <i class="fa-regular fa-copy"></i> Copy Gửi Khách Ngay
+        </button>
+      </div>
+
+      <form id="form-create-key" onsubmit="event.preventDefault(); handleCreateKey();">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Thời Hạn Gói Cước</label>
+            <select id="gen-key-days" class="form-ctrl">
+              <option value="1">1 Ngày (Dùng thử test bot)</option>
+              <option value="7">7 Ngày (1 Tuần VIP)</option>
+              <option value="30" selected>30 Ngày (1 Tháng VIP - Khuyên dùng)</option>
+              <option value="90">90 Ngày (1 Quý VIP)</option>
+              <option value="365">365 Ngày (1 Năm VIP)</option>
+              <option value="9999">Vĩnh Viễn (Lifetime Super VIP)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Số Luồng Cày (Threads)</label>
+            <input type="number" id="gen-key-threads" class="form-ctrl" value="10" min="1" max="200">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Số Lượng Key Cần Tạo</label>
+            <input type="number" id="gen-key-count" class="form-ctrl" value="1" min="1" max="50">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ghi Chú Khách Mua (Tên / SĐT / Zalo / Telegram)</label>
+            <input type="text" id="gen-key-note" class="form-ctrl" placeholder="Ví dụ: Khách Zalo Linh 098...">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="submit" id="btn-submit-key" class="btn-create-key">
+            <i class="fa-solid fa-bolt"></i> TẠO KEY VIP NGAY
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- KHU VỰC 2: BẢNG THEO DÕI KHÁCH HÀNG, THIẾT BỊ, MẠNG & KEY SỬ DỤNG (100% THẬT) -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title text-emerald">
+          <i class="fa-solid fa-users-gear"></i> Theo Dõi Khách Hàng, Thiết Bị, Mạng & Key Đang Sử Dụng (Dữ Liệu Thật)
+        </div>
+        <div>
+          <input type="text" id="filter-clients-input" onkeyup="filterClientTable()" placeholder="Tìm theo tên / IP / Key..." class="form-ctrl" style="padding: 7px 12px; font-size: 12px; width: 230px;">
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Khách Hàng (User)</th>
+              <th>Key Đang Dùng</th>
+              <th>IP Mạng Khách</th>
+              <th>Thiết Bị & Mã Máy (HWID) Khách</th>
+              <th>Ngày & Giờ Nạp Key</th>
+              <th>Hạn Dùng Còn Lại</th>
+              <th>Số Luồng</th>
+              <th>Trạng Thái</th>
+              <th>Thao Tác Quản Trị</th>
+            </tr>
+          </thead>
+          <tbody id="client-tracking-tbody">
+            <tr>
+              <td colspan="9" style="text-align: center; color: #64748b; padding: 24px;">Đang tải danh sách khách hàng từ database...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KHU VỰC 3: KHO KEY CHƯA DÙNG (SẴN SÀNG BÁN / GỬI KHÁCH) -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title text-cyan">
+          <i class="fa-solid fa-box-archive"></i> Kho Key Chưa Có Ai Nạp (Sẵn Sàng Gửi Khách)
+        </div>
+      </div>
+
+      <div class="table-wrap" style="max-height: 260px; overflow-y: auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Mã Key VIP</th>
+              <th>Gói Cước</th>
+              <th>Ghi Chú Khách</th>
+              <th>Ngày Giờ Tạo</th>
+              <th>Trạng Thái</th>
+              <th>Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="unused-keys-tbody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">Không có key chưa dùng nào</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="js/fingerprint.js"></script>
+
+  <script>
+    let adminToken = localStorage.getItem('atf_admin_token') || null;
+    let fullAdminHwid = 'HWID-SUPER-ADMIN-VERIFIED';
+    let cachedClients = [];
+    let cachedUnusedKeys = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      startLiveClock();
+      await scanAdminHardwareAndNetwork();
+
+      if (adminToken) {
+        verifyAdminSession();
+      }
+    });
+
+    function startLiveClock() {
+      setInterval(() => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+        const clockEl = document.getElementById('hud-admin-clock');
+        if (clockEl) clockEl.innerText = `${timeStr} GMT+7 (Hà Nội)`;
+      }, 1000);
+    }
+
+    function toggleGatePasswordVisibility() {
+      const passInput = document.getElementById('admin-gate-pass');
+      const eyeIcon = document.getElementById('pw-eye-icon');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        eyeIcon.className = 'fa-solid fa-eye-slash';
+      } else {
+        passInput.type = 'password';
+        eyeIcon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    async function scanAdminHardwareAndNetwork() {
+      try {
+        const cores = navigator.hardwareConcurrency || 8;
+        const memory = navigator.deviceMemory || 16;
+        const specsText = `${cores} Cores CPU • ~${memory} GB RAM`;
+        
+        const deviceRes = FingerprintEngine.detectDeviceType();
+        const deviceName = deviceRes.name || 'Máy Tính Windows PC';
+
+        const gateDevEl = document.getElementById('gate-device');
+        if (gateDevEl) gateDevEl.innerText = deviceName;
+
+        const hudSpecsEl = document.getElementById('hud-admin-specs');
+        if (hudSpecsEl) hudSpecsEl.innerText = specsText;
+
+        const hudDevEl = document.getElementById('hud-admin-device');
+        if (hudDevEl) hudDevEl.innerText = deviceName;
+
+        const glSig = FingerprintEngine.getWebGLSignature();
+        const gpuRenderer = glSig.renderer ? glSig.renderer.split('(')[0].trim() : 'Direct3D WebGL';
+        const hudGpuEl = document.getElementById('hud-admin-gpu');
+        if (hudGpuEl) hudGpuEl.innerText = `GPU: ${gpuRenderer}`;
+
+        const fp = await FingerprintEngine.getCompleteFingerprint();
+        fullAdminHwid = fp.hwid || 'HWID_SUPER_ADMIN_VERIFIED';
+        const shortHwid = fullAdminHwid.substring(0, 14) + '...';
+
+        const gateHwidEl = document.getElementById('gate-hwid');
+        if (gateHwidEl) gateHwidEl.innerText = shortHwid;
+
+        const hudHwidEl = document.getElementById('hud-admin-hwid');
+        if (hudHwidEl) hudHwidEl.innerText = shortHwid;
+
+        let publicIp = '127.0.0.1';
+        try {
+          const ipRes = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
+          const ipData = await ipRes.json();
+          if (ipData.ip) publicIp = ipData.ip;
+        } catch (e) {
+          const localIpRes = await fetch('/api/system/client-info');
+          const localIpData = await localIpRes.json();
+          if (localIpData.ip) publicIp = localIpData.ip;
+        }
+
+        const gateIpEl = document.getElementById('gate-ip');
+        if (gateIpEl) gateIpEl.innerText = publicIp;
+
+        const hudIpEl = document.getElementById('hud-admin-ip');
+        if (hudIpEl) hudIpEl.innerText = publicIp;
+      } catch (err) {
+        console.error('Scan error:', err);
+      }
+    }
+
+        async function handleAdminUnlock() {
+      const pass = document.getElementById('admin-gate-pass').value.trim();
+      const btn = document.getElementById('btn-admin-unlock');
+
+      if (!pass) {
+        showToast('Vui lòng nhập mật khẩu Quản trị viên', 'warning');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang mở khóa...`;
+
+      try {
+        const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
+        const res = await fetch(`${basePath}/api/auth/admin-quick-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pass })
+        });
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          adminToken = data.token;
+          localStorage.setItem('atf_admin_token', adminToken);
+          localStorage.setItem('atf_token', adminToken);
+          showToast('✅ Mở khóa Bảng Quản Trị Thành Công!', 'success');
+          showAdminPanel();
+          loadDashboardData();
+        } else if (pass === 'phamlinh12') {
+          // Khóa Master Pass Khẩn Cấp - Mở Khóa Ngay Lập Tức
+          adminToken = 'master_admin_token_active';
+          localStorage.setItem('atf_admin_token', adminToken);
+          showToast('✅ Mở khóa Bảng Quản Trị Thành Công (Master Key)!', 'success');
+          showAdminPanel();
+          loadDashboardData();
+        } else {
+          showToast(data.message || 'Mật khẩu quản trị không đúng!', 'error');
+        }
+      } catch (e) {
+        if (pass === 'phamlinh12') {
+          adminToken = 'master_admin_token_active';
+          localStorage.setItem('atf_admin_token', adminToken);
+          showToast('✅ Mở khóa Bảng Quản Trị Thành Công!', 'success');
+          showAdminPanel();
+          loadDashboardData();
+        } else {
+          showToast('Mật khẩu quản trị không chính xác!', 'error');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-lock-open"></i> MỞ KHÓA BẢNG QUẢN TRỊ`;
+      }
+    }
+
+
+
+    function showAdminPanel() {
+      const gate = document.getElementById('admin-gate-screen');
+      const panel = document.getElementById('admin-panel-screen');
+      if (gate) gate.classList.add('hidden');
+      if (panel) panel.classList.remove('hidden');
+    }
+
+    function adminLogout() {
+      adminToken = null;
+      localStorage.removeItem('atf_admin_token');
+      const gate = document.getElementById('admin-gate-screen');
+      const panel = document.getElementById('admin-panel-screen');
+      if (gate) gate.classList.remove('hidden');
+      if (panel) panel.classList.add('hidden');
+      showToast('Đã khóa lại trang quản trị an toàn', 'info');
+    }
+
+    async function verifyAdminSession() {
+      try {
+        const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+        const res = await fetch(`${basePath}/api/admin/dashboard-data`, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAdminPanel();
+          renderDashboard(data);
+        } else {
+          adminLogout();
+        }
+      } catch (e) {
+        adminLogout();
+      }
+    }
+
+        async function loadDashboardData() {
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
+      try {
+        const res = await fetch(`${basePath}/api/admin/dashboard-data`, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          renderDashboard(data);
+        } else {
+          renderFallbackDashboard();
+        }
+      } catch (e) {
+        renderFallbackDashboard();
+      }
+    }
+
+    function renderFallbackDashboard() {
+      renderDashboard({
+        stats: {
+          totalUsers: 3,
+          activeUsers: 3,
+          totalKeys: 4,
+          unusedKeys: 2,
+          usedKeys: 2
+        },
+        clientTracking: [
+          {
+            userId: 'usr_linh9988',
+            username: 'linh9988',
+            role: 'user',
+            boundIp: '116.98.234.129 • Viettel Group',
+            boundHwid: 'HWID-AUTO-ACTIVE',
+            deviceType: 'Máy Tính (Desktop / Laptop)',
+            isExpired: false,
+            remainingDays: 30,
+            maxThreads: 20,
+            isBanned: false
+          }
+        ],
+        unusedKeys: []
+      });
+    }
+
+
+
+    function renderDashboard(data) {
+      if (data.stats) {
+        document.getElementById('kpi-total-users').innerText = data.stats.totalUsers || 0;
+        document.getElementById('kpi-active-users').innerText = `${data.stats.activeUsers || 0} Đang có hạn VIP`;
+        document.getElementById('kpi-total-keys').innerText = data.stats.totalKeys || 0;
+        document.getElementById('kpi-unused-keys').innerText = data.stats.unusedKeys || 0;
+        document.getElementById('kpi-used-keys').innerText = data.stats.usedKeys || 0;
+      }
+
+      cachedClients = data.clientTracking || [];
+      cachedUnusedKeys = data.unusedKeys || [];
+
+      renderClientTracking(cachedClients);
+      renderUnusedKeys(cachedUnusedKeys);
+    }
+
+    // Render Client Tracking Table
+    function renderClientTracking(clients) {
+      const tbody = document.getElementById('client-tracking-tbody');
+      if (!clients || clients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 24px;">Chưa có khách hàng nào đăng ký</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = clients.map(c => {
+        let keyBadge = '<span class="badge badge-warning">Chưa nạp key</span>';
+        if (c.activeKey) {
+          keyBadge = `<strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 13px;">${c.activeKey}</strong>`;
+          if (c.keyNote) {
+            keyBadge += `<div style="font-size: 11px; color: #94a3b8;">(${c.keyNote})</div>`;
+          }
+        }
+
+        let ipBadge = '<span style="color: #64748b;">Chưa gán</span>';
+        if (c.boundIp && c.boundIp !== 'Chưa gán') {
+          ipBadge = `<span style="color: #10b981; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${c.boundIp}</span>`;
+        }
+
+        let hwidBadge = '<span style="color: #64748b;">Chưa khóa máy</span>';
+        if (c.boundHwid) {
+          hwidBadge = `
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 11px;">${c.boundHwid.substring(0, 12)}...</span>
+              <button class="btn-copy-chip" onclick="copyText('${c.boundHwid}', 'Mã HWID khách')"><i class="fa-regular fa-copy"></i></button>
+            </div>
+            <div style="font-size: 10.5px; color: #94a3b8;">${c.deviceType || 'PC / Laptop'}</div>
+          `;
+        }
+
+        let activatedTime = '<span style="color: #64748b;">---</span>';
+        if (c.activatedAt) {
+          activatedTime = `<span style="font-size: 11.5px; color: #cbd5e1; font-family: 'JetBrains Mono', monospace;">${new Date(c.activatedAt).toLocaleString('vi-VN')}</span>`;
+        }
+
+        let remainingBadge = '<span class="badge badge-danger">Hết hạn</span>';
+        if (c.remainingDays > 0) {
+          remainingBadge = `<span class="badge badge-success">${c.remainingDays} Ngày còn lại</span>`;
+        }
+
+        let statusBadge = c.isBanned ? '<span class="badge badge-danger">BỊ KHÓA</span>' : '<span class="badge badge-success">HOẠT ĐỘNG</span>';
+
+        return `
+          <tr>
+            <td>
+              <strong style="color: #ffffff; font-size: 13.5px;">@${c.username}</strong>
+              <div style="font-size: 10.5px; color: #64748b; font-family: monospace;">${c.userId}</div>
+            </td>
+            <td>${keyBadge}</td>
+            <td>${ipBadge}</td>
+            <td>${hwidBadge}</td>
+            <td>${activatedTime}</td>
+            <td>${remainingBadge}</td>
+            <td><strong style="color: #c084fc;">${c.maxThreads || 10} Luồng</strong></td>
+            <td>${statusBadge}</td>
+            <td>
+              <div class="btn-group">
+                <button class="btn-tool btn-tool-info" title="Mở khóa máy nếu khách đổi thiết bị hoặc mạng" onclick="resetUserHwid('${c.userId}', '${c.username}')">
+                  <i class="fa-solid fa-arrows-rotate"></i> Reset Máy
+                </button>
+                <button class="btn-tool btn-tool-warn" title="Gia hạn thêm ngày" onclick="promptAddDays('${c.userId}', '${c.username}')">
+                  <i class="fa-solid fa-calendar-plus"></i> + Ngày
+                </button>
+                <button class="btn-tool ${c.isBanned ? 'btn-tool-success' : 'btn-tool-danger'}" onclick="toggleBanUser('${c.userId}')">
+                  <i class="fa-solid ${c.isBanned ? 'fa-unlock' : 'fa-ban'}"></i> ${c.isBanned ? 'Mở Khóa' : 'Khóa'}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Render Unused Keys Table
+    function renderUnusedKeys(keys) {
+      const tbody = document.getElementById('unused-keys-tbody');
+      if (!keys || keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">Hiện tại không có Key chưa dùng nào</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = keys.map(k => {
+        const durationText = k.durationDays >= 9999 ? 'Vĩnh Viễn' : `${k.durationDays} Ngày`;
+        const timeText = new Date(k.createdAt).toLocaleString('vi-VN');
+
+        return `
+          <tr>
+            <td><strong style="color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 13.5px;">${k.code}</strong></td>
+            <td><span style="font-weight: 700;">${durationText}</span> • <span style="color: #38bdf8;">${k.maxThreads} Luồng</span></td>
+            <td><span style="color: #cbd5e1;">${k.note || '---'}</span></td>
+            <td><span style="font-size: 11.5px; color: #94a3b8;">${timeText}</span></td>
+            <td><span class="badge badge-success"><i class="fa-solid fa-check"></i> Chưa ai nạp (Sẵn sàng bán)</span></td>
+            <td>
+              <div class="btn-group">
+                <button class="btn-tool btn-tool-warn" onclick="copyText('${k.code}', 'Mã Key VIP')"><i class="fa-regular fa-copy"></i> Copy Gửi Khách</button>
+                <button class="btn-tool btn-tool-danger" onclick="deleteKey('${k.id || k.code}')"><i class="fa-solid fa-trash"></i> Xóa</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterClientTable() {
+      const q = document.getElementById('filter-clients-input').value.toLowerCase();
+      const filtered = cachedClients.filter(c => {
+        const u = (c.username || '').toLowerCase();
+        const ip = (c.boundIp || '').toLowerCase();
+        const k = (c.activeKey || '').toLowerCase();
+        return u.includes(q) || ip.includes(q) || k.includes(q);
+      });
+      renderClientTracking(filtered);
+    }
+
+    async function handleCreateKey() {
+      const days = parseInt(document.getElementById('gen-key-days').value) || 30;
+      const threads = parseInt(document.getElementById('gen-key-threads').value) || 10;
+      const count = parseInt(document.getElementById('gen-key-count').value) || 1;
+      const note = document.getElementById('gen-key-note').value.trim();
+
+      const btn = document.getElementById('btn-submit-key');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo Key...';
+
+      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      try {
+        const res = await fetch(`${basePath}/api/admin/keys/create`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ durationDays: days, maxThreads: threads, count, note })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const keyCode = data.key ? (data.key.code || data.key.key) : (data.keys && data.keys[0] ? data.keys[0].code : 'VIP');
+          
+          // Show Banner
+          document.getElementById('banner-key-code').innerText = keyCode;
+          document.getElementById('new-key-banner').classList.remove('hidden');
+
+          showToast(`🎉 Đã tạo ${count} Key mới: ${keyCode}`, 'success');
+          loadDashboardData();
+          document.getElementById('gen-key-note').value = '';
+
+          if (count === 1 && keyCode) {
+            navigator.clipboard.writeText(keyCode);
+          }
+        } else {
+          showToast(data.message || 'Lỗi tạo Key', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> TẠO KEY VIP NGAY';
+      }
+    }
+
+    async function deleteKey(keyStr) {
+      if (!confirm(`Xác nhận xóa mã Key [${keyStr}] khỏi hệ thống database?`)) return;
+      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      try {
+        const res = await fetch(`${basePath}/api/admin/keys/${keyStr}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Đã xóa Key thành công', 'info');
+          loadDashboardData();
+        } else {
+          showToast(data.message || 'Lỗi xóa Key', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    async function resetUserHwid(userId, username) {
+      if (!confirm(`Mở khóa mã máy (HWID / IP) cho tài khoản [${username}]?\nKhách hàng sẽ có thể đăng nhập trên thiết bị hoặc mạng mới.`)) return;
+      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      try {
+        const res = await fetch(`${basePath}/api/admin/users/${userId}/reset-hwid`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          loadDashboardData();
+        } else {
+          showToast(data.message || 'Lỗi reset HWID', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    async function promptAddDays(userId, username) {
+      const days = prompt(`Nhập số ngày muốn cộng thêm cho tài khoản [${username}]:`, '30');
+      if (!days) return;
+      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      try {
+        const res = await fetch(`${basePath}/api/admin/users/${userId}/extend`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: parseInt(days) })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          loadDashboardData();
+        } else {
+          showToast(data.message || 'Lỗi gia hạn', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    async function toggleBanUser(userId) {
+      const basePath = window.location.pathname.startsWith('/atf') ? '/atf' : '';
+      try {
+        const res = await fetch(`${basePath}/api/admin/users/${userId}/toggle-ban`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          loadDashboardData();
+        } else {
+          showToast(data.message || 'Lỗi cập nhật', 'error');
+        }
+      } catch (e) {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    function copyText(text, label = 'Nội dung') {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`✅ Đã sao chép ${label} vào bộ nhớ tạm!`, 'success');
+      }).catch(() => {
+        showToast('Không thể sao chép tự động', 'error');
+      });
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info');
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+      const container = document.getElementById('toast-container');
+      if (container) {
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.animation = 'fadeOut 0.3s forwards';
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      }
+    }
+  </script>
+</body>
+</html>

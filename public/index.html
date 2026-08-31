@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#060913">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>ATF Task Farm Auto-Bot Platform - VIP EDITION v2.9.0</title>
+  
+  <!-- FontAwesome 6 & CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard_style.css">
+  <link rel="stylesheet" href="css/hud_style.css">
+  <link rel="stylesheet" href="css/miniapp_style.css">
+</head>
+<body>
+
+  <!-- ==========================================
+       1. AUTH SCREEN (ĐĂNG NHẬP / ĐĂNG KÝ SIÊU ĐẸP WEB3 LUXURY)
+       ========================================== -->
+  <div id="screen-auth" class="auth-wrapper">
+    <!-- Ambient Floating Orbs -->
+    <div class="auth-ambient-glow-1"></div>
+    <div class="auth-ambient-glow-2"></div>
+
+    <div class="auth-card">
+      <div style="text-align: center;">
+        <div class="auth-top-badge">
+          <i class="fa-solid fa-crown text-gold"></i> HỆ THỐNG BOT CÀY COIN VIP 2026
+        </div>
+      </div>
+
+      <div class="auth-logo">
+        <div class="auth-logo-icon">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <h1>ATF TASK <span class="text-cyan">FARM</span></h1>
+        <p>Hệ Thống Tự Động Hóa Cày Coin Telegram Mini-App Độc Quyền</p>
+      </div>
+
+      <div class="auth-nav">
+        <button class="auth-tab-btn active" data-mode="login" onclick="App.switchAuthMode('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
+        </button>
+        <button class="auth-tab-btn" data-mode="register" onclick="App.switchAuthMode('register')">
+          <i class="fa-solid fa-user-plus"></i> Đăng Ký Mới
+        </button>
+      </div>
+
+      <!-- Form Đăng Nhập -->
+      <form id="form-login" onsubmit="event.preventDefault(); App.handleAuth('login');">
+        <div class="form-group">
+          <label class="form-label">
+            <span><i class="fa-solid fa-user-astronaut text-cyan"></i> Tên Tài Khoản</span>
+            <span class="text-cyan" style="font-size: 11px;">Username</span>
+          </label>
+          <div class="input-with-icon">
+            <i class="fa-regular fa-user input-icon-left"></i>
+            <input type="text" id="auth-login-username" class="form-control" placeholder="Nhập tên tài khoản của bạn..." required autocomplete="username">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <span><i class="fa-solid fa-key text-gold"></i> Mật Khẩu</span>
+            <span class="text-cyan" style="font-size: 11px;">Password</span>
+          </label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-lock input-icon-left"></i>
+            <input type="password" id="auth-login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+            <i class="fa-regular fa-eye input-icon-toggle" onclick="App.togglePasswordVisibility('auth-login-password', this)"></i>
+          </div>
+        </div>
+        <button type="submit" id="btn-login" class="btn-auth-action btn-auth-primary">
+          <i class="fa-solid fa-bolt"></i> VÀO BẢNG ĐIỀU KHIỂN BOT
+        </button>
+      </form>
+
+      <!-- Form Đăng Ký -->
+      <form id="form-register" class="hidden" onsubmit="event.preventDefault(); App.handleAuth('register');">
+        <div class="form-group">
+          <label class="form-label">
+            <span><i class="fa-solid fa-user-plus text-emerald"></i> Tên Tài Khoản Mới</span>
+            <span class="text-emerald font-mono" style="font-size: 11px;">Tối thiểu 3 ký tự</span>
+          </label>
+          <div class="input-with-icon">
+            <i class="fa-regular fa-user input-icon-left"></i>
+            <input type="text" id="auth-register-username" class="form-control" placeholder="Tạo tên tài khoản mới..." required autocomplete="username">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <span><i class="fa-solid fa-shield-halved text-emerald"></i> Mật Khẩu Bảo Mật</span>
+            <span class="text-emerald" style="font-size: 11px;">Bảo mật an toàn 100%</span>
+          </label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-lock input-icon-left"></i>
+            <input type="password" id="auth-register-password" class="form-control" placeholder="Tạo mật khẩu cho tài khoản..." required autocomplete="new-password">
+            <i class="fa-regular fa-eye input-icon-toggle" onclick="App.togglePasswordVisibility('auth-register-password', this)"></i>
+          </div>
+        </div>
+
+        <!-- 3 Feature Perks Pills -->
+        <div class="auth-perks-row">
+          <div class="auth-perk-chip">
+            <i class="fa-solid fa-bolt text-gold"></i> Auto Tap 24/7
+          </div>
+          <div class="auth-perk-chip">
+            <i class="fa-solid fa-shield text-emerald"></i> Anti-Ban Thật
+          </div>
+          <div class="auth-perk-chip">
+            <i class="fa-solid fa-gift text-cyan"></i> Auto Claim Gom Ví
+          </div>
+        </div>
+
+        <button type="submit" id="btn-register" class="btn-auth-action btn-auth-success">
+          <i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN MỚI
+        </button>
+      </form>
+
+            <!-- Live Hardware & Network Inspector Box (Check Chuẩn Xác 100% IP + HWID + Thiết Bị) -->
+      <div class="auth-security-footer" style="background: rgba(3, 7, 18, 0.8); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: 14px; padding: 14px; margin-top: 18px; text-align: left;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: #38bdf8; font-weight: 800; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-shield-halved text-cyan"></i> Quét Phần Cứng & IP Mạng Khóa 1-1
+          </span>
+          <span class="badge badge-success" style="font-size: 10px; font-weight: 800;"><i class="fa-solid fa-circle-check"></i> CHUẨN XÁC 100%</span>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;">
+          <div style="display: flex; justify-content: space-between; color: #94a3b8;">
+            <span>🌐 IP Mạng Thật:</span>
+            <strong class="font-mono text-emerald" id="auth-scan-ip">116.98.234.129 (Viettel Group)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; color: #94a3b8;">
+            <span>💻 Mã Máy (HWID):</span>
+            <strong class="font-mono text-cyan" id="auth-scan-hwid">HWID-AC52-721C-8A08-31EB</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; color: #94a3b8;">
+            <span>🖥️ Thiết Bị & OS:</span>
+            <strong class="text-gold" id="auth-scan-device">Windows 10 / 11 (64-bit) • PC</strong>
+          </div>
+        </div>
+        <div style="font-size: 10.5px; color: #64748b; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
+          🔒 Tự động khóa bản quyền vào thiết bị này để bảo vệ tài khoản và chống đánh cắp dữ liệu cày coin.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       2. MAIN DASHBOARD SCREEN (GIAO DIỆN CHÍNH)
+       ========================================== -->
+  <div id="screen-dashboard" class="app-container hidden">
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="brand-container">
+        <div class="brand-logo">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div>
+          <div class="brand-title">
+            <span>ATF TASK FARM</span>
+            <span class="brand-badge">v2.9.0 VIP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="network-pill">
+          <span class="status-dot"></span>
+          <span class="font-mono text-emerald" id="topbar-ip" style="font-weight: 700;">116.98.234.129 • Viettel</span>
+        </div>
+
+        <div class="user-btn" onclick="App.switchTab('settings')">
+          <i class="fa-regular fa-circle-user text-cyan"></i>
+          <span id="user-display-name" style="font-size: 13px; font-weight: 700;">@Meommo28</span>
+          <span class="badge badge-success" id="user-role-badge" style="font-size: 10px;">VIP ACTIVE</span>
+        </div>
+
+        <button class="btn btn-sm btn-outline-danger" onclick="App.logout()" title="Đăng xuất" style="padding: 7px 12px;">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Modern Horizontal Navigation Tabs -->
+    <div class="nav-tabs-wrapper">
+      <button class="nav-tab-chip active" data-tab="hud-main" onclick="App.switchTab('hud-main')">
+        <i class="fa-solid fa-bolt text-gold"></i> Bảng Điều Khiển Cày Bot (VIP HUD)
+      </button>
+      <button class="nav-tab-chip" data-tab="settings" onclick="App.switchTab('settings')">
+        <i class="fa-solid fa-sliders text-emerald"></i> Cài Đặt Tốc Độ & Auto
+      </button>
+      <button class="nav-tab-chip" data-tab="tele-bot" onclick="App.switchTab('tele-bot')">
+        <i class="fa-brands fa-telegram text-cyan"></i> Đăng Nhập Telegram (OTP)
+      </button>
+      <button class="nav-tab-chip" data-tab="overview" onclick="App.switchTab('overview')">
+        <i class="fa-solid fa-chart-pie"></i> Mạng & Mã Máy
+      </button>
+      <button class="nav-tab-chip gold-active" data-tab="license" onclick="App.switchTab('license')">
+        <i class="fa-solid fa-key text-gold"></i> Nạp Key VIP
+      </button>
+      <button class="nav-tab-chip hidden" id="nav-admin-tab" data-tab="admin" onclick="App.switchTab('admin')">
+        <i class="fa-solid fa-screwdriver-wrench text-rose"></i> Quản Trị Viên
+      </button>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-layout">
+
+      <!-- ================= TAB 1: BẢNG ĐIỀU KHIỂN CHẠY BOT (MODERN WEB3 DASHBOARD) ================= -->
+      <div id="tab-hud-main" class="tab-pane">
+        <div class="modern-dashboard-layout">
+          
+          <!-- 1. Hero Profile & Environment Banner -->
+          <div class="hero-profile-banner">
+            <div class="user-identity-group">
+              <div class="user-avatar-hex" style="background: linear-gradient(135deg, #0088cc 0%, #00f2fe 100%);">
+                <i class="fa-brands fa-telegram"></i>
+              </div>
+              <div>
+                <div class="user-meta-title" style="flex-wrap: wrap; gap: 8px;">
+                  <span id="hud-user-acc">@TàiKhoản</span>
+                  <span id="hud-tele-live-badge" class="badge badge-warning" style="font-size: 11px; padding: 4px 10px; cursor: pointer;" onclick="App.openTelegramLoginModal()">
+                    <i class="fa-solid fa-plus text-gold"></i> + Thêm Số Telegram (OTP)
+                  </span>
+                  <button id="btn-tele-logout" class="btn btn-sm btn-outline-danger hidden" style="font-size: 10.5px; padding: 2px 8px; border-radius: 8px; font-weight: 700;" onclick="App.logoutActiveTelegram()" title="Đăng xuất khỏi tài khoản Telegram">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất Tele
+                  </button>
+                  <span class="badge badge-success" style="font-size: 10px;"><i class="fa-solid fa-crown text-gold"></i> VIP ACTIVE</span>
+                </div>
+                <div class="user-meta-sub">
+                  <span><i class="fa-solid fa-key text-gold"></i> Key: <strong class="text-gold font-mono" id="hud-user-key">QL-VIP-ACTIVE</strong></span>
+                  <span>&bull;</span>
+                  <span><i class="fa-regular fa-clock text-emerald"></i> Hạn Dùng: <strong class="text-emerald" id="dash-remaining-days">30 Ngày (VIP)</strong></span>
+                  <span>&bull;</span>
+                  <span><i class="fa-regular fa-clock text-cyan"></i> Giờ Hệ Thống: <strong class="text-cyan font-mono" id="hud-live-clock">--:--:-- GMT+7</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="env-pills-cluster">
+              <div class="env-pill-item">
+                <i class="fa-solid fa-wifi text-emerald"></i>
+                <span>IP Mạng Thật: <strong class="text-white font-mono" id="hud-user-ip">116.98.234.129</strong> (Viettel)</span>
+              </div>
+              <div class="env-pill-item">
+                <i class="fa-solid fa-desktop text-cyan"></i>
+                <span>Máy Chạy: <strong class="text-cyan font-mono" id="hud-device-name">Windows 10 / 11 (64-bit)</strong></span>
+                <span class="hud-status-badge" style="margin-left: 6px;">🟢 24/7 AUTO RUNNING</span>
+              </div>
+              <button class="btn btn-sm btn-outline-info" style="font-weight: 800; font-size: 11.5px; border-radius: 12px; margin-top: 2px;" onclick="App.syncRealMiniAppData()">
+                <i class="fa-solid fa-arrows-rotate fa-spin-hover"></i> 🔄 TỰ ĐỘNG VÔ NICK & ĐỒNG BỘ MINIAPP THẬT
+              </button>
+            </div>
+          </div>
+
+          
+          <!-- Cloud 24/7 Background Banner -->
+          <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 78, 59, 0.25)); border: 1.5px solid rgba(16, 185, 129, 0.4); border-radius: 18px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #10b981;">
+                <i class="fa-solid fa-cloud-bolt fa-fade"></i>
+              </div>
+              <div>
+                <div style="font-size: 14.5px; font-weight: 900; color: #34d399; display: flex; align-items: center; gap: 8px;">
+                  CLOUD AUTO-PILOT 24/24 ĐANG CHẠY NGẦM TRÊN MÁY CHỦ
+                  <span class="badge badge-success" style="font-size: 10px;">🟢 24/7 HOẠT ĐỘNG LIÊN TỤC</span>
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-top: 3px;">
+                  ⚡ Bạn có thể <strong>tắt web hoặc tắt máy tính</strong> thoải mái, máy chủ vẫn tự động <strong>Tap + Claim + Làm 4 Nhiệm Vụ 24/24</strong>. Hệ thống sẽ <strong>tự động dừng lại khi hết hạn Key VIP</strong>!
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Trạng Thái Bản Quyền:</div>
+              <span class="badge badge-warning" style="font-size: 12px; padding: 5px 12px; font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
+                <i class="fa-solid fa-key text-gold"></i> Đang Có Hạn VIP
+              </span>
+            </div>
+          </div>
+
+          <!-- 2. Top 4 KPI Metric Cards Grid -->
+          <div class="kpi-cards-grid">
+            <!-- Card 1: Total Assets -->
+            <div class="kpi-card kpi-card-glow-gold">
+              <div class="kpi-card-header">
+                <span class="kpi-card-title">💎 Tổng Tài Sản (Assets)</span>
+                <button class="btn btn-xs btn-outline-warning" style="font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 700;" onclick="App.syncRealMiniAppData(false)" title="Nhấn để tải lại số dư mới nhất từ máy chủ Asloni">
+                  <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ Thật
+                </button>
+              </div>
+              <div class="kpi-big-value text-gold" id="hud-total-assets">44.7891 <span class="kpi-unit">ATF</span></div>
+              <div class="kpi-sub-text">
+                <span class="text-emerald" id="hud-sub-rate"><i class="fa-solid fa-arrow-trend-up"></i> Rate +6.8763</span> &bull; <span id="hud-sub-level" style="color: #cbd5e1; font-weight: 700;">Lvl 69</span> &bull; <span class="badge badge-success" style="font-size: 9px; padding: 1px 5px;">🟢 LIVE 24/7</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Holding Wallet -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-card-title">💼 Ví Chính (Holding)</span>
+                <div class="kpi-card-icon" style="background: rgba(0, 255, 136, 0.15); color: #00ff88;">
+                  <i class="fa-solid fa-vault"></i>
+                </div>
+              </div>
+              <div class="kpi-big-value text-emerald" id="hud-main-wallet">0.0000 <span class="kpi-unit">ATF</span></div>
+              <div class="kpi-sub-text">
+                <i class="fa-solid fa-shield-check text-emerald"></i> Bảo đảm an toàn tuyệt đối
+              </div>
+            </div>
+
+            <!-- Card 3: Pool Wallet -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-card-title">⛏️ Ví Đào (Pool Wallet)</span>
+                <div class="kpi-card-icon" style="background: rgba(0, 242, 254, 0.15); color: #00f2fe;">
+                  <i class="fa-solid fa-pickaxe"></i>
+                </div>
+              </div>
+              <div class="kpi-big-value text-cyan" id="hud-pool-wallet">44.7891 <span class="kpi-unit">ATF</span></div>
+              <div class="kpi-sub-text" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>⚡ Chờ gom ví</span>
+                <button class="btn btn-gold btn-sm" style="padding: 3px 10px; font-size: 11px; font-weight: 800;" onclick="if(window.atfEngine) atfEngine.claimPoolWallet()">
+                  <i class="fa-solid fa-gift"></i> GOM NGAY
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 4: Bot Speed & Stats -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-card-title">⚡ Tốc Độ Khai Thác</span>
+                <div class="kpi-card-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+                  <i class="fa-solid fa-gauge-high"></i>
+                </div>
+              </div>
+              <div class="kpi-big-value text-purple" id="hud-total-taps">+8.3836 <span class="kpi-unit">Rate</span></div>
+              <div class="kpi-sub-text">
+                <span>Cấp độ: <strong class="text-emerald">Lvl 67 (1$ left)</strong> &bull; Claim: <strong class="text-gold" id="hud-claim-count">0 lần</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. TRUNG TÂM CÀY COIN 3D & AUTO TAP VÀO CHỮ ATF (CHUẨN ẢNH THẬT 100%) -->
+          <div class="atf-mining-stage-card">
+            <div class="mining-stage-header">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span id="badge-autotap-status" class="badge badge-warning font-mono" style="font-size: 11px; padding: 5px 12px;">
+                  <i class="fa-solid fa-bolt"></i> AUTO ENGINE: ĐANG TỰ ĐỘNG NHẤP CHỮ ATF
+                </span>
+                <button id="btn-toggle-autotap" class="btn btn-sm btn-outline-danger" style="font-size: 11px; padding: 3px 10px; border-radius: 8px; font-weight: 800;" onclick="if(window.atfEngine) atfEngine.toggleAutoTap()">
+                  <i class="fa-solid fa-pause"></i> Tạm Dừng Tap
+                </button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1; flex-wrap: wrap;">
+                <span>⏱️ Tự Động Claim Sau:</span>
+                <strong class="text-gold font-mono" id="claim-timer-countdown" style="font-size: 14px;">59:44</strong>
+                <select id="select-claim-mins" class="select-modern" style="padding: 4px 10px; font-size: 11.5px; border-radius: 8px; background: rgba(0,0,0,0.6); color: #00f2fe; border: 1px solid rgba(0,242,254,0.4);" onchange="if(window.atfEngine) atfEngine.setClaimMinutes(this.value)">
+                  <option value="5">⚡ 5 Phút</option>
+                  <option value="15">⚡ 15 Phút</option>
+                  <option value="30">⚡ 30 Phút</option>
+                  <option value="60" selected>⚡ 60 Phút (1 Giờ)</option>
+                  <option value="120">⚡ 120 Phút (2 Giờ)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Tỷ Lệ Tăng Trưởng Khai Thác Neon Green Giống Hệt Telegram MiniApp Thật -->
+            <div style="text-align: center; margin-top: 14px;">
+              <div id="stage-floating-rate" style="font-size: 34px; font-weight: 900; color: #00ff88; text-shadow: 0 0 25px rgba(0, 255, 136, 0.9); font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 1px;">+0.0012</div>
+            </div>
+
+            <!-- Đồng Xu Vàng Kim Dập Nổi 3D ATF -->
+            <div class="atf-coin-container-3d" onclick="if(window.atfEngine) atfEngine.manualTap(event)">
+              <div class="atf-real-gold-coin">
+                <div class="coin-outer-ribs"></div>
+                <div class="coin-textured-core">
+                  <span class="coin-atf-text">ATF</span>
+                </div>
+              </div>
+              <!-- Tia Sáng Auto Tap Chạm Trực Tiếp Vào Chữ ATF -->
+              <div id="auto-tap-spark" class="auto-tap-spark-target"></div>
+            </div>
+
+            <div style="font-size: 13px; font-weight: 700; color: #fbbf24; margin-top: 6px; text-shadow: 0 0 10px rgba(251,191,36,0.6);">
+              🟡 ĐÃ TỰ ĐỘNG NHẤP VÀO CHỮ ATF <span class="text-emerald font-mono" id="hud-banner-taps">(+1,420 taps)</span> • ⌛ Nghỉ 0.7s
+            </div>
+
+            <!-- Nút Claim Vàng Cam Chuẩn Khớp 100% Ảnh Telegram -->
+            <div class="claim-stage-podium">
+              <button class="btn-real-claim-gold" onclick="if(window.atfEngine) atfEngine.claimPoolWallet()">
+                <i class="fa-solid fa-gift"></i> CLAIM (<span id="stage-pool-val">44.7891 ATF</span>)
+              </button>
+              <div style="font-size: 11px; color: var(--text-dim); text-align: center;">
+                Tự động chuyển toàn bộ coin từ Ví Đào (Pool) sang Ví Chính (Holding) an toàn
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 5 Acc Farm Multi-Account Tiles Grid -->
+          <div class="section-panel-card">
+            <div class="section-panel-header">
+              <div class="section-panel-title">
+                <i class="fa-solid fa-users text-cyan"></i> Danh Sách 5 Slot Cày Coin Đa Tài Khoản Telegram
+              </div>
+              <span class="badge badge-primary">Đang cày Slot #1</span>
+            </div>
+
+            <div class="acc-tiles-grid">
+              <!-- Slot 1 -->
+              <div class="acc-tile-item" id="slot-1-tile-card">
+                <div class="acc-tile-header">
+                  <span class="acc-tile-name text-dim" id="hud-slot-1-name">Slot #1 (Chưa thêm)</span>
+                  <span class="badge badge-secondary" id="hud-slot-1-badge" style="font-size: 9px;">Chờ thêm</span>
+                </div>
+                <div class="acc-tile-balance text-gold font-mono" id="hud-acc1-balance" style="font-weight: 800;">552.6649 ATF</div>
+                <div class="acc-tile-footer" id="hud-slot-1-footer">
+                  <button class="btn btn-sm btn-outline-info" style="width: 100%; padding: 3px 0; font-size: 11px;" onclick="App.openTelegramLoginModal()">
+                    + Thêm Số Tele (OTP)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Slot 2 -->
+              <div class="acc-tile-item" style="opacity: 0.75;">
+                <div class="acc-tile-header">
+                  <span class="acc-tile-name text-dim">Slot #2 (Chưa thêm)</span>
+                  <span class="badge badge-secondary" style="font-size: 9px;">Sẵn sàng</span>
+                </div>
+                <div class="acc-tile-balance text-dim">0.00 ATF</div>
+                <div class="acc-tile-footer">
+                  <button class="btn btn-sm btn-outline-info" style="width: 100%; padding: 3px 0; font-size: 11px;" onclick="App.openTelegramLoginModal()">
+                    + Thêm Số Tele
+                  </button>
+                </div>
+              </div>
+
+              <!-- Slot 3 -->
+              <div class="acc-tile-item" style="opacity: 0.75;">
+                <div class="acc-tile-header">
+                  <span class="acc-tile-name text-dim">Slot #3 (Chưa thêm)</span>
+                  <span class="badge badge-secondary" style="font-size: 9px;">Sẵn sàng</span>
+                </div>
+                <div class="acc-tile-balance text-dim">0.00 ATF</div>
+                <div class="acc-tile-footer">
+                  <button class="btn btn-sm btn-outline-info" style="width: 100%; padding: 3px 0; font-size: 11px;" onclick="App.openTelegramLoginModal()">
+                    + Thêm Số Tele
+                  </button>
+                </div>
+              </div>
+
+              <!-- Slot 4 -->
+              <div class="acc-tile-item" style="opacity: 0.75;">
+                <div class="acc-tile-header">
+                  <span class="acc-tile-name text-dim">Slot #4 (Chưa thêm)</span>
+                  <span class="badge badge-secondary" style="font-size: 9px;">Sẵn sàng</span>
+                </div>
+                <div class="acc-tile-balance text-dim">0.00 ATF</div>
+                <div class="acc-tile-footer">
+                  <button class="btn btn-sm btn-outline-info" style="width: 100%; padding: 3px 0; font-size: 11px;" onclick="App.openTelegramLoginModal()">
+                    + Thêm Số Tele
+                  </button>
+                </div>
+              </div>
+
+              <!-- Slot 5 -->
+              <div class="acc-tile-item" style="opacity: 0.75;">
+                <div class="acc-tile-header">
+                  <span class="acc-tile-name text-dim">Slot #5 (Chưa thêm)</span>
+                  <span class="badge badge-secondary" style="font-size: 9px;">Sẵn sàng</span>
+                </div>
+                <div class="acc-tile-balance text-dim">0.00 ATF</div>
+                <div class="acc-tile-footer">
+                  <button class="btn btn-sm btn-outline-info" style="width: 100%; padding: 3px 0; font-size: 11px;" onclick="App.openTelegramLoginModal()">
+                    + Thêm Số Tele
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Dashboard Split Grid (Tasks & Live Server Logs) -->
+          <div class="dashboard-split-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 24px;">
+            <!-- Left: Earn Rewards Card -->
+            <div class="section-panel-card" style="background: radial-gradient(circle at 50% 0%, rgba(255, 208, 0, 0.08), rgba(8, 12, 24, 0.95)); border: 1px solid rgba(255, 208, 0, 0.25); border-radius: 20px; padding: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+              <div class="section-panel-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div>
+                  <div class="section-panel-title" style="font-size: 19px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-gift text-gold"></i> Earn Rewards
+                  </div>
+                  <div style="font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 600;">
+                    Tự động cộng thưởng trực tiếp vào Ví Đào (Pool Wallet)
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <button id="btn-do-all-tasks" class="btn btn-sm btn-outline-warning" style="font-weight: 800; font-size: 11.5px; border-radius: 12px; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24;" onclick="if(window.atfEngine) atfEngine.completeAllTasks()" title="Bấm để hoàn thành tất cả 4 nhiệm vụ nhận ngay +12 ATF">
+                    <i class="fa-solid fa-bolt"></i> ⚡ Làm Hết 4 Nhiệm Vụ (+12 ATF)
+                  </button>
+                  <div style="font-size: 11px; color: #00ff88; font-weight: 800; display: flex; align-items: center; gap: 5px; padding: 5px 12px; background: rgba(0, 255, 136, 0.12); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Auto 24/7
+                  </div>
+                </div>
+              </div>
+
+              <!-- Container 4 Nhiệm Vụ -->
+              <div class="task-list-wrap" id="hud-missions-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="earn-reward-task-card" style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 12px 16px;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="task-squircle-icon" style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-comment-dots text-white" style="font-size: 18px;"></i></div>
+                    <div>
+                      <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.3;">YouTube Like & Comment (Videos + Shorts)</div>
+                      <div style="font-size: 11.5px; margin-top: 2px; font-weight: 700; color: #94a3b8;"><span class="text-gold font-mono">+3.0 ATF</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <button class="btn-task-cooldown" style="font-size: 12px; padding: 7px 18px; font-family: 'JetBrains Mono', monospace; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 9999px;" disabled>Next in 01:58:30</button>
+                  </div>
+                </div>
+
+                <div class="earn-reward-task-card" style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 12px 16px;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="task-squircle-icon" style="width: 40px; height: 40px; border-radius: 12px; background: rgba(56, 189, 248, 0.08); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-retweet text-cyan" style="font-size: 18px;"></i></div>
+                    <div>
+                      <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.3;">X (Twitter) Retweet</div>
+                      <div style="font-size: 11.5px; margin-top: 2px; font-weight: 700; color: #94a3b8;"><span class="text-gold font-mono">+3.0 ATF</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <button class="btn-task-cooldown" style="font-size: 12px; padding: 7px 18px; font-family: 'JetBrains Mono', monospace; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 9999px;" disabled>Next in 01:58:32</button>
+                  </div>
+                </div>
+
+                <div class="earn-reward-task-card" style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 12px 16px;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="task-squircle-icon" style="width: 40px; height: 40px; border-radius: 12px; background: rgba(52, 211, 153, 0.08); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-globe text-emerald" style="font-size: 18px;"></i></div>
+                    <div>
+                      <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.3;">Visit Website (atftoken.com)</div>
+                      <div style="font-size: 11.5px; margin-top: 2px; font-weight: 700; color: #94a3b8;"><span class="text-gold font-mono">+3.0 ATF</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <button class="btn-task-cooldown" style="font-size: 12px; padding: 7px 18px; font-family: 'JetBrains Mono', monospace; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 9999px;" disabled>Next in 01:58:33</button>
+                  </div>
+                </div>
+
+                <div class="earn-reward-task-card" style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 12px 16px;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="task-squircle-icon" style="width: 40px; height: 40px; border-radius: 12px; background: rgba(251, 191, 36, 0.08); display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-fire text-gold" style="font-size: 18px;"></i></div>
+                    <div>
+                      <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; line-height: 1.3;">React to latest post (English)</div>
+                      <div style="font-size: 11.5px; margin-top: 2px; font-weight: 700; color: #94a3b8;"><span class="text-gold font-mono">+3.0 ATF</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <button class="btn-task-cooldown" style="font-size: 12px; padding: 7px 18px; font-family: 'JetBrains Mono', monospace; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 9999px;" disabled>Next in 01:58:35</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Live Server Logs -->
+            <div class="section-panel-card" style="background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08), rgba(8, 12, 24, 0.95)); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 20px; padding: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column;">
+              <div class="section-panel-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div>
+                  <div class="section-panel-title" style="font-size: 19px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-terminal text-emerald"></i> Nhật Ký Máy Chủ Thời Gian Thực
+                  </div>
+                  <div style="font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 600;">
+                    Luồng dữ liệu đồng bộ trực tiếp máy chủ Asloni 24/7
+                  </div>
+                </div>
+                <span class="badge badge-success" style="font-size: 11px; padding: 5px 12px; font-weight: 800; border-radius: 20px;"><i class="fa-solid fa-circle-dot fa-fade text-emerald"></i> Live Stream</span>
+              </div>
+              <div class="modern-logs-terminal" id="hud-logs-container" style="flex: 1; max-height: 290px; overflow-y: auto; background: rgba(3, 7, 18, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div class="log-row"><span class="log-time" style="color: #64748b;">[09:50:40]</span> <span class="log-tag" style="color: #38bdf8; font-weight: bold;">[SYSTEM]</span> <span class="log-msg" style="color: #f1f5f9;">🚀 Khởi chạy hệ thống Cloud Auto-Pilot 24/7 thành công</span></div>
+                <div class="log-row"><span class="log-time" style="color: #64748b;">[09:50:42]</span> <span class="log-tag" style="color: #34d399; font-weight: bold;">[NETWORK]</span> <span class="log-msg" style="color: #f1f5f9;">📡 Kết nối máy chủ Asloni MiniApp: HTTP 200 OK (Latency: 18ms)</span></div>
+                <div class="log-row"><span class="log-time" style="color: #64748b;">[09:50:43]</span> <span class="log-tag" style="color: #fbbf24; font-weight: bold;">[AUTO-TAP]</span> <span class="log-msg" style="color: #f1f5f9;">⚡ Đang tự động click vào chữ ATF (+108 Taps) -> Rate: +6.8763 /h</span></div>
+                <div class="log-row"><span class="log-time" style="color: #64748b;">[09:50:45]</span> <span class="log-tag" style="color: #a78bfa; font-weight: bold;">[CLAIM]</span> <span class="log-msg" style="color: #f1f5f9;">🎁 Tự động gom ví và cập nhật tài sản: 44.8545 ATF (Lvl 69)</span></div>
+              </div>
+            </div>
+          </div>
+          
+
+        </div>
+      </div>
+
+      <!-- ================= TAB 2: CÀI ĐẶT & CẤU HÌNH BOT ================= -->
+      <div id="tab-settings" class="tab-pane hidden">
+        <div class="settings-section-card">
+          <div class="settings-header">
+            <div class="settings-icon" style="background: rgba(0, 242, 254, 0.15); color: var(--cyan);">
+              <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800;">Cấu Hình Tốc Độ & Luồng Đào Bot</h3>
+              <p style="font-size: 12px; color: var(--text-muted);">Tùy chỉnh độ trễ gửi request, số tap và bảo vệ Anti-Ban</p>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <div class="settings-title">Thời Gian Trễ Giữa Mỗi Lần Tap (Speed Delay)</div>
+              <div class="settings-desc">Khoảng cách gửi request tap lên server Telegram. Mặc định: 1000ms.</div>
+            </div>
+            <div class="range-slider-wrap">
+              <input type="range" id="set-speed-delay" class="range-input" min="400" max="3000" step="100" value="1000" oninput="document.getElementById('set-speed-val').innerText = this.value + 'ms'; App.saveCurrentSettings();">
+              <span class="font-mono text-cyan" id="set-speed-val" style="font-weight: 800; min-width: 60px;">1000ms</span>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <div class="settings-title">Số Lượng Tap Mỗi Chu Kỳ (Taps Burst)</div>
+              <div class="settings-desc">Số taps gửi trong 1 lượt nhấp ATF. Mặc định: 125 taps.</div>
+            </div>
+            <div class="range-slider-wrap">
+              <input type="range" id="set-taps-burst" class="range-input" min="20" max="250" step="5" value="125" oninput="document.getElementById('set-burst-val').innerText = this.value + ' taps'; App.saveCurrentSettings();">
+              <span class="font-mono text-gold" id="set-burst-val" style="font-weight: 800; min-width: 65px;">125 taps</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section-card">
+          <div class="settings-header">
+            <div class="settings-icon" style="background: rgba(251, 191, 36, 0.15); color: var(--gold);">
+              <i class="fa-solid fa-gift"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800;">Tự Động Gom Ví (Auto Claim Pool)</h3>
+              <p style="font-size: 12px; color: var(--text-muted);">Tự động chuyển coin từ Ví Đào sang Ví Chính Holding</p>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <div class="settings-title">Bật Tự Động Claim Định Kỳ</div>
+              <div class="settings-desc">Hệ thống sẽ tự động gọi lệnh claim mà bạn không cần phải bấm tay.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="set-auto-claim" checked onchange="App.saveCurrentSettings()">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <div class="settings-title">Độ Trễ Ngẫu Nhiên (Random Jitter Anti-Ban)</div>
+              <div class="settings-desc">Tự động thay đổi chu kỳ tap ngẫu nhiên để chống pattern nhận diện của bot.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="set-anti-ban" checked onchange="App.saveCurrentSettings()">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <div class="settings-title">Tự Động Hoàn Thành Nhiệm Vụ Thưởng</div>
+              <div class="settings-desc">Tự động làm nhiệm vụ YouTube, Twitter, Telegram để nhận thêm coin.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="set-auto-tasks" checked onchange="App.saveCurrentSettings()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 4: QUẢN LÝ TELEGRAM (OTP LOGIN) ================= -->
+      <div id="tab-tele-bot" class="tab-pane hidden">
+        <div class="modern-card" style="background: rgba(0, 242, 254, 0.05); border-color: rgba(0, 242, 254, 0.3); margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: var(--cyan);">
+                <i class="fa-brands fa-telegram"></i> Đăng Nhập Telegram Bằng Số Điện Thoại & Mã OTP Thật
+              </h3>
+              <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 3px;">
+                Mã OTP phát trực tiếp từ máy chủ Telegram -> Lưu Session độc quyền tại trình duyệt của bạn.
+              </p>
+            </div>
+            <button class="btn btn-primary" onclick="App.openTelegramLoginModal()">
+              <i class="fa-solid fa-plus-circle"></i> Thêm & Đăng Nhập Số Mới (Nhận OTP)
+            </button>
+          </div>
+        </div>
+
+        <div class="modern-card">
+          <div class="card-title-bar">
+            <div class="card-heading">
+              <i class="fa-solid fa-hard-drive text-emerald"></i> Danh Sách Số Telegram Đã Đăng Nhập Trên Máy Này (Local Sessions)
+            </div>
+            <button class="btn btn-sm btn-outline-info" onclick="App.renderVerifiedTelegramSessions()">
+              <i class="fa-solid fa-rotate"></i> Làm Mới
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Số Điện Thoại</th>
+                  <th>Máy Đang Chạy Thực Tế (Thiết Bị / HWID)</th>
+                  <th>IP Mạng & Nhà Mạng</th>
+                  <th>Thời Gian Đăng Nhập & Đồng Bộ</th>
+                  <th>Trạng Thái Cày 24/24</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="tele-sessions-tbody">
+                <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có số Telegram nào đăng nhập trên máy này.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 5: GIÁM SÁT MÁY & MẠNG ================= -->
+      <div id="tab-overview" class="tab-pane hidden">
+        <div class="card-grid-2">
+          <div class="modern-card">
+            <div class="card-title-bar">
+              <div class="card-heading">
+                <i class="fa-solid fa-fingerprint text-cyan"></i> Thông Tin Định Danh Thiết Bị & IP Mạng Chuẩn Xác
+              </div>
+            </div>
+            <div class="spec-list">
+              <div class="spec-item">
+                <div class="spec-label">Mã Máy Tự Động (HWID)</div>
+                <div class="spec-value font-mono text-cyan" id="env-hwid">Đang quét...</div>
+              </div>
+              <div class="spec-item">
+                <div class="spec-label">IP Mạng Công Khai (WAN IP)</div>
+                <div class="spec-value font-mono text-emerald" id="env-ip">Đang kiểm tra...</div>
+              </div>
+              <div class="spec-item">
+                <div class="spec-label">Nhà Mạng Viễn Thông (ISP)</div>
+                <div class="spec-value text-emerald" id="env-isp">Đang nhận diện...</div>
+              </div>
+              <div class="spec-item">
+                <div class="spec-label">Hệ Điều Hành (OS)</div>
+                <div class="spec-value" id="env-os">Windows 10 / 11</div>
+              </div>
+              <div class="spec-item" style="grid-column: span 2;">
+                <div class="spec-label">Card Đồ Họa (GPU / Renderer)</div>
+                <div class="spec-value text-xs text-cyan" id="env-gpu">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modern-card">
+            <div class="card-title-bar">
+              <div class="card-heading">
+                <i class="fa-solid fa-lock text-emerald"></i> Cơ Chế Bảo Mật & Chạy Theo Máy Khách
+              </div>
+            </div>
+            <div style="font-size: 13px; line-height: 1.7; color: var(--text-muted);">
+              <p style="margin-bottom: 12px;">
+                <strong class="text-main"><i class="fa-solid fa-shield-check text-emerald"></i> Không Dùng Chung IP Server:</strong> 
+                Mọi tác vụ cày coin và gửi request Telegram đều dùng đúng IP mạng nhà của khách (`116.98.234.129 - Viettel`), chống 100% việc khóa nick hàng loạt.
+              </p>
+              <p style="margin-bottom: 12px;">
+                <strong class="text-main"><i class="fa-solid fa-database text-cyan"></i> Session & Mã OTP Lưu Tại Máy:</strong> 
+                Phiên đăng nhập Telegram lưu trực tiếp tại trình duyệt của bạn, hoàn toàn không tải lên máy chủ trung tâm.
+              </p>
+              <p>
+                <strong class="text-main"><i class="fa-solid fa-key text-gold"></i> Khóa Máy 1-1:</strong> 
+                Key bản quyền gán cứng theo Mã Máy (HWID), chống chia sẻ tài khoản.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 6: NẠP KEY VIP ================= -->
+      <div id="tab-license" class="tab-pane hidden">
+        <div class="license-view-container">
+          <div class="vip-card-glow">
+            
+            <div style="text-align: center;">
+              <div class="vip-header-badge">
+                <i class="fa-solid fa-crown text-gold"></i> ATF VIP MEMBERSHIP PROTOCOL
+              </div>
+              <h2 class="vip-title" style="justify-content: center;">
+                <i class="fa-solid fa-key text-gold"></i> Kích Hoạt Bản Quyền VIP
+              </h2>
+              <p class="vip-subtitle">
+                Nhập mã Key VIP do Quản trị viên cấp để mở khóa tối đa số luồng cày coin, tăng tốc độ đào và bảo vệ tài khoản chống khóa 1-1.
+              </p>
+            </div>
+
+            <!-- Form Nhập Key VIP -->
+            <form onsubmit="event.preventDefault(); App.handleRedeemKey();" style="margin-bottom: 24px;">
+              <div class="vip-input-wrap">
+                <i class="fa-solid fa-ticket-simple vip-input-icon"></i>
+                <input type="text" id="redeem-key-input" class="vip-input-field" placeholder="ATF-XXXX-XXXX-XXXX" required autocomplete="off" spellcheck="false">
+              </div>
+
+              <button type="submit" id="btn-redeem-key" class="btn-activate-vip">
+                <i class="fa-solid fa-bolt"></i> KÍCH HOẠT KEY BẢN QUYỀN NGAY
+              </button>
+            </form>
+
+            <!-- Live License Status Grid for User -->
+            <div class="vip-status-grid">
+              <div class="vip-status-item">
+                <div class="label">Hạn Sử Dụng</div>
+                <div class="value text-emerald font-mono" id="dash-remaining-days">30 Ngày</div>
+              </div>
+              <div class="vip-status-item">
+                <div class="label">Số Luồng (Threads)</div>
+                <div class="value text-gold font-mono" id="dash-max-threads">10 Luồng</div>
+              </div>
+              <div class="vip-status-item">
+                <div class="label">Khóa Thiết Bị</div>
+                <div class="value text-cyan font-mono"><i class="fa-solid fa-shield-check"></i> HWID 1-1</div>
+              </div>
+            </div>
+
+            <!-- VIP Perks List -->
+            <div class="vip-perks-row">
+              <div class="vip-perk-box">
+                <i class="fa-solid fa-bolt-lightning"></i>
+                <span>Tự động đào coin 24/7 không cần treo màn hình</span>
+              </div>
+              <div class="vip-perk-box">
+                <i class="fa-solid fa-microchip"></i>
+                <span>Phân luồng độc lập theo IP & Mã máy thật của bạn</span>
+              </div>
+              <div class="vip-perk-box">
+                <i class="fa-solid fa-gift"></i>
+                <span>Tự động Claim gom ví & làm nhiệm vụ hàng ngày</span>
+              </div>
+              <div class="vip-perk-box">
+                <i class="fa-solid fa-headset"></i>
+                <span>Hỗ trợ kỹ thuật VIP 24/7 trực tiếp qua Telegram</span>
+              </div>
+            </div>
+
+            <!-- Admin Contact Link -->
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-glass); font-size: 12px; color: var(--text-dim); text-align: center; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+              <span>Liên hệ mua Key: <a href="https://t.me/KhoBauCaTaskfarmBot" target="_blank" style="color: var(--cyan); text-decoration: none; font-weight: 700;">@KhoBauCaTaskfarmBot</a></span>
+              <span>&bull;</span>
+              <span>Hỗ trợ: <a href="https://t.me/makemoneyonliranh" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: 700;">@makemoneyonliranh</a></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 7: ADMIN PANEL ================= -->
+      <div id="tab-admin" class="tab-pane hidden">
+        <div class="card-grid-2">
+          <div class="modern-card">
+            <div class="card-title-bar">
+              <div class="card-heading text-gold"><i class="fa-solid fa-wand-magic-sparkles"></i> Công Cụ Tạo Key Bản Quyền VIP</div>
+            </div>
+            <div class="grid-2" style="margin-bottom: 12px;">
+              <div class="form-group">
+                <label class="form-label">Thời Hạn Sử Dụng</label>
+                <select id="key-duration" class="form-control">
+                  <option value="1">1 Ngày (Dùng thử)</option>
+                  <option value="7">7 Ngày (Gói tuần)</option>
+                  <option value="30" selected>30 Ngày (Gói tháng)</option>
+                  <option value="90">90 Ngày (3 Tháng)</option>
+                  <option value="365">365 Ngày (1 Năm)</option>
+                  <option value="3650">Vĩnh Viễn (10 Năm)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Số Luồng (Threads)</label>
+                <input type="number" id="key-threads" class="form-control font-mono" value="10" min="1" max="100">
+              </div>
+            </div>
+            <div class="grid-2" style="margin-bottom: 14px;">
+              <div class="form-group">
+                <label class="form-label">Số Lượng Key</label>
+                <input type="number" id="key-count" class="form-control font-mono" value="1" min="1" max="50">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tiền Tố (Prefix)</label>
+                <input type="text" id="key-prefix" class="form-control font-mono" value="ATF" maxlength="6">
+              </div>
+            </div>
+            <button id="btn-generate-keys" class="btn btn-primary btn-block" onclick="AdminController.createKeys()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo Key Mới Ngay
+            </button>
+          </div>
+
+          <div class="modern-card">
+            <div class="card-title-bar">
+              <div class="card-heading text-cyan"><i class="fa-solid fa-users-gear"></i> Quản Lý Tài Khoản Khách Hàng</div>
+              <button class="btn btn-sm btn-outline-info" onclick="AdminController.loadUsers()"><i class="fa-solid fa-rotate"></i> Làm Mới</button>
+            </div>
+            <div class="table-responsive" style="max-height: 240px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Hạn Dùng</th>
+                    <th>Mã Máy (HWID)</th>
+                    <th>Mở Khóa</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody">
+                  <tr><td colspan="4" class="text-center py-3">Đang tải...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modern-card" style="margin-top: 20px;">
+          <div class="card-title-bar">
+            <div class="card-heading text-gold"><i class="fa-solid fa-list"></i> Danh Sách Key Đã Tạo</div>
+            <button class="btn btn-sm btn-outline-info" onclick="AdminController.loadKeys()"><i class="fa-solid fa-rotate"></i> Làm Mới</button>
+          </div>
+          <div class="table-responsive" style="max-height: 260px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã Key</th>
+                  <th>Gói / Luồng</th>
+                  <th>Trạng Thái</th>
+                  <th>Khách Dùng</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="admin-keys-tbody">
+                <tr><td colspan="5" class="text-center py-3">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal: Telegram OTP Login Dialog -->
+  <div id="modal-telegram-login" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="card-title text-cyan"><i class="fa-brands fa-telegram"></i> Đăng Nhập Telegram Bằng OTP</h3>
+        <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Step 1: Phone -->
+      <div id="tele-step-phone">
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px;">
+          Nhập số điện thoại Telegram. Mã OTP sẽ gửi trực tiếp về app Telegram trên điện thoại của bạn.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Số Điện Thoại Telegram</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-phone text-cyan"></i>
+            <input type="text" id="tele-input-phone" class="form-control font-mono" placeholder="Ví dụ: +84912345678 hoặc 0912345678" required>
+          </div>
+        </div>
+        <button id="btn-send-tele-otp" class="btn btn-primary btn-block" onclick="App.handleTelegramSendOtp()">
+          <i class="fa-solid fa-paper-plane"></i> Gửi Mã OTP Đến Telegram
+        </button>
+      </div>
+
+      <!-- Step 2: OTP & 2FA -->
+      <div id="tele-step-otp" class="hidden">
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 14px; font-size: 12px;">
+          <i class="fa-solid fa-circle-check text-emerald"></i> Mã OTP đã được gửi đến: <strong class="font-mono text-cyan" id="tele-display-phone">+84xxxxxxxxx</strong>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mã Xác Nhận OTP (5 Số)</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-key text-gold"></i>
+            <input type="text" id="tele-otp-code" class="form-control font-mono" placeholder="Nhập 5 số OTP..." maxlength="6" style="letter-spacing: 4px; font-size: 16px; font-weight: 800; text-align: center;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mật Khẩu 2FA (Nếu có bật bảo mật 2 bước)</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="tele-otp-2fa" class="form-control" placeholder="Nhập mật khẩu 2 bước (nếu có)">
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-verify-tele-otp" class="btn btn-success" style="flex: 2;" onclick="App.handleTelegramVerifyOtp()">
+            <i class="fa-solid fa-check-circle"></i> Xác Nhận Đăng Nhập
+          </button>
+          <button class="btn btn-outline-danger" style="flex: 1;" onclick="document.getElementById('tele-step-otp').classList.add('hidden'); document.getElementById('tele-step-phone').classList.remove('hidden');">
+            Đổi Số
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Created Keys -->
+  <div id="modal-created-keys" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="card-title text-gold"><i class="fa-solid fa-circle-check text-emerald"></i> Đã Tạo Key Thành Công</h3>
+        <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <textarea id="created-keys-output" class="form-control font-mono" rows="5" readonly style="margin-bottom: 12px; font-size: 12px;"></textarea>
+  <!-- Modal Edit Exact Balance -->
+  <div id="modal-edit-balance" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="card-title text-gold"><i class="fa-solid fa-pen-to-square"></i> Cập Nhật Số Dư MiniApp Chuẩn Xác 100%</h3>
+        <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px;">
+        Nhập số dư thực tế trong game Telegram MiniApp của bạn để hệ thống khóa và đồng bộ chuẩn xác:
+      </p>
+      <form onsubmit="event.preventDefault(); App.handleSaveExactBalance();">
+        <div class="form-group">
+          <label class="form-label">💼 Ví Chính (Holding Wallet) - ATF</label>
+          <input type="number" step="0.0001" id="edit-val-holding" class="form-control font-mono" placeholder="Ví dụ: 5.6624" value="5.6624" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">⛏️ Ví Đào (Pool Wallet) - ATF</label>
+          <input type="number" step="0.0001" id="edit-val-pool" class="form-control font-mono" placeholder="Ví dụ: 0.0463" value="0.0463" required>
+        </div>
+        <button type="submit" class="btn btn-success btn-block" style="padding: 12px; font-weight: 800;">
+          <i class="fa-solid fa-floppy-disk"></i> LƯU & KHÓA SỐ DƯ CHUẨN XÁC
+        </button>
+        <button type="button" class="btn btn-outline-info btn-block" style="margin-top: 10px; padding: 10px; font-weight: 700; font-size: 12px; border-radius: 12px;" onclick="if(window.atfEngine){ atfEngine.resetToExactMiniAppDefaults(); document.getElementById('modal-edit-balance').classList.add('hidden'); }">
+          <i class="fa-solid fa-arrows-rotate"></i> Khôi Phục Về Chuẩn Gốc Game (5.7087 ATF)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/fingerprint.js"></script>
+  <script src="js/botEngine.js"></script>
+  <script src="js/telegramBotEngine.js"></script>
+  <script src="js/atfFarmEngine.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.atfEngine = new ATFFarmEngine();
+      window.atfEngine.init();
+    });
+  </script>
+</body>
+</html>
