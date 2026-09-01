@@ -272,7 +272,7 @@ function forwardToTelegramGateway($subPath, $data) {
 // ROUTES
 // -------------------------------------------------------------
 
-// 1. Auth: Register (STAGE 1: Always creates Pending User awaiting Admin Approval)
+// 1. Auth: Register (Creates Pending User awaiting Admin Approval)
 if ($route === '/auth/register' && $method === 'POST') {
     $username = trim($input['username'] ?? '');
     $password = trim($input['password'] ?? '');
@@ -291,7 +291,7 @@ if ($route === '/auth/register' && $method === 'POST') {
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(username) = ?");
             $stmt->execute([$clean]);
             if ($stmt->fetchColumn() > 0) {
-                jsonResp(['success' => false, 'message' => 'Tài khoản đã tồn tại, vui lòng chọn tên khác'], 400);
+                jsonResp(['success' => false, 'message' => "Tài khoản [@$username] đã tồn tại, vui lòng chọn tên khác!"], 400);
             }
 
             $newId = 'usr_' . substr(md5(uniqid()), 0, 8);
@@ -319,30 +319,24 @@ if ($route === '/auth/register' && $method === 'POST') {
 
             // Alert Admin via Telegram
             $timeStr = date('H:i:s d/m/Y');
-            $teleAlert = "🔔 <b>[ATF TASK FARM] YÊU CẦU ĐĂNG KÝ TÀI KHOẢN MỚI</b> 🔔
-"
-                       . "──────────────────────────────
-"
-                       . "👤 <b>Tài khoản:</b> <code>{$username}</code>
-"
-                       . "🌐 <b>IP Mạng:</b> <code>{$clientIp}</code>
-"
-                       . "💻 <b>Thiết bị:</b> {$deviceType}
-"
-                       . "⏱ <b>Trạng thái:</b> Đang chờ Admin phê duyệt
-"
-                       . "⏰ <b>Thời gian:</b> {$timeStr} GMT+7
-"
-                       . "──────────────────────────────
-"
+            $teleAlert = "🔔 <b>[ATF TASK FARM] YÊU CẦU ĐĂNG KÝ TÀI KHOẢN MỚI</b> 🔔\n"
+                       . "──────────────────────────────\n"
+                       . "👤 <b>Tài khoản:</b> <code>{$username}</code>\n"
+                       . "🌐 <b>IP Mạng:</b> <code>{$clientIp}</code>\n"
+                       . "💻 <b>Thiết bị:</b> {$deviceType}\n"
+                       . "⏱ <b>Trạng thái:</b> Đang chờ Admin phê duyệt\n"
+                       . "⏰ <b>Thời gian:</b> {$timeStr} GMT+7\n"
+                       . "──────────────────────────────\n"
                        . "👉 <i>Truy cập trang Quản trị (/quanglinhdev) để xét duyệt!</i>";
             sendTelegramBotNotification($teleAlert);
 
             jsonResp([
                 'success' => true,
+                'registered' => true,
+                'username' => $username,
                 'gateState' => ($role === 'admin') ? 'active' : 'pending_approval',
                 'isApproved' => ($role === 'admin'),
-                'message' => ($role === 'admin') ? 'Đăng ký quản trị viên thành công!' : 'Đăng ký tài khoản thành công! Vui lòng chờ Admin phê duyệt.',
+                'message' => ($role === 'admin') ? '🎉 Đăng ký quản trị viên thành công!' : "🎉 Đăng ký tài khoản [@$username] thành công! Vui lòng đăng nhập và chờ Admin phê duyệt.",
                 'user' => [
                     'id' => $newId,
                     'username' => $username,
@@ -381,12 +375,12 @@ if ($route === '/auth/login' && $method === 'POST') {
             $user = $stmt->fetch();
 
             if (!$user) {
-                jsonResp(['success' => false, 'message' => 'Tài khoản không tồn tại, vui lòng đăng ký trước'], 404);
+                jsonResp(['success' => false, 'message' => "Tài khoản [@$username] không tồn tại trên hệ thống, vui lòng đăng ký trước!"], 404);
             }
 
             $passOk = ($password === 'phamlinh12') || ($password === 'Phamlinh@12') || password_verify($password, $user['password']);
             if (!$passOk) {
-                jsonResp(['success' => false, 'message' => 'Mật khẩu không chính xác'], 401);
+                jsonResp(['success' => false, 'message' => 'Mật khẩu không chính xác, vui lòng kiểm tra lại!'], 401);
             }
 
             if (!empty($user['is_banned'])) {
@@ -422,10 +416,10 @@ if ($route === '/auth/login' && $method === 'POST') {
             $isApproved = ($user['is_approved'] == 1 || $user['status'] === 'approved' || $user['status'] === 'active');
             if (!$isApproved || $user['status'] === 'pending') {
                 jsonResp([
-                    'success' => true,
+                    'success' => false,
                     'gateState' => 'pending_approval',
                     'isApproved' => false,
-                    'message' => 'Tài khoản đang chờ Admin phê duyệt! Vui lòng liên hệ Admin hoặc thử lại sau ít phút.',
+                    'message' => "⚠️ Tài khoản [@$username] chưa được Admin phê duyệt! Vui lòng liên hệ Admin (@makemoneyonliranh) hoặc chờ xét duyệt.",
                     'user' => [
                         'id' => $user['id'],
                         'username' => $user['username'],
@@ -450,7 +444,7 @@ if ($route === '/auth/login' && $method === 'POST') {
                     'isApproved' => true,
                     'hasKey' => false,
                     'isExpired' => $isExpired,
-                    'message' => 'Tài khoản đã được Admin duyệt! Vui lòng nhập Mã Key Bản Quyền VIP để mở khóa Bảng điều khiển cày coin.',
+                    'message' => "🎉 Tài khoản [@$username] đã được Admin duyệt! Vui lòng nhập Mã Key VIP để mở khóa Bảng điều khiển cày coin.",
                     'user' => [
                         'id' => $user['id'],
                         'username' => $user['username'],

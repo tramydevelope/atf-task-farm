@@ -852,16 +852,16 @@ const App = {
     }
   },
 
-  async handleAuth(type) {
+    async handleAuth(type) {
     const usernameInput = document.getElementById(`auth-${type}-username`);
     const passwordInput = document.getElementById(`auth-${type}-password`);
     const btn = document.getElementById(`btn-${type}`);
 
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
 
     if (!username || !password) {
-      this.showToast('Vui lòng điền đầy đủ tài khoản và mật khẩu', 'warning');
+      this.showToast('Vui lòng điền đầy đủ tên tài khoản và mật khẩu!', 'warning');
       return;
     }
 
@@ -875,52 +875,81 @@ const App = {
         body: JSON.stringify({
           username,
           password,
-          hwid: this.clientHwid,
+          hwid: this.clientHwid || (window.FingerprintEngine ? window.FingerprintEngine.getHardwareID() : 'HWID-AUTO-CLIENT'),
           deviceType: window.FingerprintEngine ? window.FingerprintEngine.getRealDeviceType() : 'Máy Tính PC',
           clientIp: this.networkInfo?.ip || '116.98.234.129',
           clientIsp: this.networkInfo?.isp || 'Viettel Group'
         })
       });
 
-      if (res && res.success) {
-        // STAGE 1: Pending Approval
-        if (res.gateState === 'pending_approval' || res.user?.status === 'pending') {
-          localStorage.setItem('atf_pending_user', JSON.stringify(res.user));
+      // 1. XỬ LÝ KHI ĐĂNG KÝ (REGISTER)
+      if (type === 'register') {
+        if (res && res.success) {
+          // Hiện thông báo Đăng ký thành công nổi bật
+          this.showToast(`🎉 Đăng ký tài khoản [@${username}] thành công! Vui lòng đăng nhập và chờ Admin phê duyệt.`, 'success');
+          
+          // Tự động chuyển sang Tab Đăng Nhập và điền sẵn Username
+          this.switchAuthMode('login');
+          const loginUserEl = document.getElementById('auth-login-username');
+          const loginPassEl = document.getElementById('auth-login-password');
+          if (loginUserEl) {
+            loginUserEl.value = username;
+            if (loginPassEl) {
+              loginPassEl.value = '';
+              loginPassEl.focus();
+            }
+          }
+        } else {
+          this.showToast(res ? res.message : 'Đăng ký không thành công, vui lòng thử lại!', 'error');
+        }
+        return;
+      }
+
+      // 2. XỬ LÝ KHI ĐĂNG NHẬP (LOGIN)
+      if (type === 'login') {
+        // Trường hợp 1: Chưa được Admin duyệt
+        if (res && (res.gateState === 'pending_approval' || (res.user && res.user.status === 'pending') || !res.isApproved)) {
+          localStorage.setItem('atf_pending_user', JSON.stringify(res.user || { username: username }));
           const pUser = document.getElementById('pending-username-display');
           if (pUser) pUser.innerText = '@' + username;
-          this.showToast(res.message || 'Tài khoản đang chờ Admin phê duyệt!', 'info');
+          this.showToast(res.message || `⚠️ Tài khoản [@${username}] chưa được Admin phê duyệt!`, 'warning');
           this.showScreen('pending');
           return;
         }
 
-        // STAGE 2: Approved, Needs Key Activation
-        if (res.gateState === 'key_required' || res.user?.status === 'approved_need_key') {
-          localStorage.setItem('atf_key_gate_user', JSON.stringify(res.user));
+        // Trường hợp 2: Đã được Admin duyệt -> Yêu cầu nhập Key VIP
+        if (res && res.success && (res.gateState === 'key_required' || (res.user && res.user.status === 'approved_need_key'))) {
+          localStorage.setItem('atf_key_gate_user', JSON.stringify(res.user || { username: username }));
           const gateUser = document.getElementById('gate-username-display');
           if (gateUser) gateUser.innerText = '@' + username;
-          this.showToast(res.message || 'Tài khoản đã duyệt! Vui lòng nhập Key VIP.', 'info');
+          this.showToast(res.message || `🎉 Tài khoản đã được Admin duyệt! Vui lòng nhập Key VIP để sử dụng.`, 'info');
           this.showScreen('key');
           return;
         }
 
-        // STAGE 3: Active Dashboard
-        this.token = res.token;
-        localStorage.setItem('atf_token', this.token);
-        this.currentUser = res.user;
-        this.showToast(res.message || 'Đăng nhập thành công!', 'success');
-        this.updateUserUI();
-        this.showScreen('dashboard');
-        this.startHeartbeat();
-        this.initBotEngines();
-        this.renderVerifiedTelegramSessions();
-      } else {
-        this.showToast(res.message || 'Đăng nhập thất bại', 'error');
+        // Trường hợp 3: Đã duyệt VÀ Có Key VIP -> Mở Bảng Điều Khiển Đào 24/7
+        if (res && res.success && res.gateState === 'active') {
+          this.token = res.token;
+          localStorage.setItem('atf_token', this.token);
+          this.currentUser = res.user;
+          this.showToast(res.message || '🎉 Đăng nhập thành công! Chào mừng bạn vào Bảng điều khiển ATF VIP.', 'success');
+          this.updateUserUI();
+          this.showScreen('dashboard');
+          this.startHeartbeat();
+          this.initBotEngines();
+          this.renderVerifiedTelegramSessions();
+          return;
+        }
+
+        // Lỗi khác (Sai mật khẩu, tài khoản không tồn tại...)
+        this.showToast(res ? res.message : 'Đăng nhập không thành công, vui lòng kiểm tra lại!', 'error');
       }
+
     } catch (e) {
-      this.showToast('Lỗi kết nối máy chủ', 'error');
+      this.showToast('Lỗi kết nối máy chủ: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
-      btn.innerHTML = type === 'login' ? '<i class="fa-solid fa-bolt"></i> VÀO HỆ THỐNG ATF VIP' : '<i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN MỚI';
+      btn.innerHTML = type === 'login' ? '<i class="fa-solid fa-bolt"></i> VÀO BẢNG ĐIỀU KHIỂN BOT' : '<i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN MỚI';
     }
   },
 
