@@ -1,3 +1,20 @@
+
+function sendTelegramBotApiMessage(text, chatId = '8251830594') {
+  const token = '8995507898:AAHPoTjiNTJJxuMfmaPcXb_Z_HZxsLFsBTA';
+  const postData = JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' });
+  const req = https.request({
+    hostname: 'api.telegram.org',
+    path: '/bot' + token + '/sendMessage',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+  }, (res) => {
+    res.on('data', () => {});
+  });
+  req.on('error', (e) => console.warn('Tele Bot Error:', e.message));
+  req.write(postData);
+  req.end();
+}
+
 // =========================================================================
 // ✈️ TELEGRAM ADMIN NOTIFICATIONS (CHUẨN 100% THEO FILE WIFI.PY)
 // =========================================================================
