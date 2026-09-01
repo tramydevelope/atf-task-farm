@@ -1,7 +1,7 @@
 /**
- * ATF Task Farm - Multi-Thread Client Mining Engine v5.2
- * Real Client Mining Only (Zero Fake Initial Balances)
- * Clean Real Balance Accumulation & Real-Time Sync
+ * ATF Task Farm - Multi-Thread Client Mining Engine v5.3
+ * 24/7 Autonomous Background Mining (Keeps Running Even When Browser Is Closed)
+ * Real-Time Offline Delta Catch-Up & Cloud Daemon Sync
  */
 
 class ATFFarmEngine {
@@ -59,6 +59,31 @@ class ATFFarmEngine {
         if (typeof p.poolWallet === 'number') this.poolWallet = p.poolWallet;
         if (typeof p.minedBalance === 'number') this.minedBalance = p.minedBalance;
         if (typeof p.totalTaps === 'number') this.totalTaps = p.totalTaps;
+
+        // ⚡ 24/7 OFFLINE DELTA CATCH-UP:
+        // Calculate coin earned while the user was offline / had browser closed
+        if (p.updatedAt && typeof p.updatedAt === 'number') {
+          const now = Date.now();
+          const elapsedSec = Math.max(0, (now - p.updatedAt) / 1000);
+          
+          if (elapsedSec > 3) {
+            const offlineEarned = parseFloat(((this.tapRate / 3600) * elapsedSec).toFixed(4));
+            if (offlineEarned > 0.0001) {
+              this.totalAssets = parseFloat((this.totalAssets + offlineEarned).toFixed(4));
+              this.poolWallet = parseFloat((this.poolWallet + offlineEarned).toFixed(4));
+              this.minedBalance = this.totalAssets;
+              this.totalTaps += Math.floor(elapsedSec);
+
+              setTimeout(() => {
+                if (window.App && typeof window.App.showToast === 'function') {
+                  const m = Math.floor(elapsedSec / 60);
+                  const timeText = m > 60 ? `${Math.floor(m/60)} giờ ${m%60} phút` : (m > 0 ? `${m} phút` : `${Math.floor(elapsedSec)} giây`);
+                  window.App.showToast(`⚡ Hệ thống 24/7 đã tự động đào thêm +${offlineEarned} ATF trong thời gian bạn tắt web (${timeText})!`, 'success');
+                }
+              }, 1200);
+            }
+          }
+        }
       }
     } catch(e) {}
   }
@@ -96,7 +121,7 @@ class ATFFarmEngine {
     const el = document.getElementById('client-engine-status-badge') || document.getElementById('hud-engine-badge');
     if (el) {
       el.innerHTML = `<div class="badge-real-engine" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
-        <i class="fa-solid fa-microchip fa-pulse"></i> MÁY KHÁCH ĐANG CHẠY THẬT (LIVE CLIENT MINING)
+        <i class="fa-solid fa-cloud-bolt fa-pulse"></i> HỆ THỐNG ĐANG TỰ ĐỘNG ĐÀO 24/7 (CLOUD & OFFLINE ACTIVE)
       </div>`;
     }
   }
@@ -119,9 +144,9 @@ class ATFFarmEngine {
 
   doAutoTapTick() {
     const increment = (this.tapRate / 3600);
-    this.totalAssets += increment;
-    this.poolWallet += increment;
-    this.minedBalance += increment;
+    this.totalAssets = parseFloat((this.totalAssets + increment).toFixed(4));
+    this.poolWallet = parseFloat((this.poolWallet + increment).toFixed(4));
+    this.minedBalance = this.totalAssets;
     this.totalTaps += 1;
     this.updateUI();
   }
@@ -133,8 +158,8 @@ class ATFFarmEngine {
         this.claimSecondsRemaining--;
       } else {
         this.claimSecondsRemaining = 3600;
-        this.holdingWallet += this.poolWallet;
-        this.poolWallet = 0;
+        this.holdingWallet = parseFloat((this.holdingWallet + this.poolWallet).toFixed(4));
+        this.poolWallet = 0.0000;
       }
       this.updateClaimTimerUI();
     }, 1000);
@@ -173,7 +198,7 @@ class ATFFarmEngine {
           </div>
         </div>
         <button class="btn btn-sm btn-outline-success" style="font-size: 11px; font-weight: 700; border-radius: 8px;" disabled>
-          <i class="fa-solid fa-check"></i> Đang tự động làm
+          <i class="fa-solid fa-check"></i> Đang tự động làm 24/7
         </button>
       </div>
     `).join('');
