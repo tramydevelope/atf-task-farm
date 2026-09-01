@@ -17,6 +17,9 @@ return [
     'ATF_ADMIN_USER' => 'admin',
     'ATF_ADMIN_PASSWORD' => 'phamlinh12',
 
+    // Real Telegram MTProto Gateway Service URL
+    'ATF_TELEGRAM_SERVICE_BASE' => 'https://atf-task-farm-bot.onrender.com',
+
     // Telegram Bot & Admin Configuration
     'TELEGRAM_BOT_TOKEN' => '8995507898:AAHPoTjiNTJJxuMfmaPcXb_Z_HZxsLFsBTA',
     'TELEGRAM_ADMIN_ID' => '8251830594',

