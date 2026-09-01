@@ -1,7 +1,11 @@
 <?php
 /**
  * ATF Task Farm - High-Performance MySQL PDO Backend API
- * Direct Guest Registration Access + Live Telegram Session Sync + Real Telegram OTP Bot
+ * Strict 3-Stage Security Gate:
+ *   Stage 1: Register -> Pending Admin Approval (screen-pending)
+ *   Stage 2: Approved by Admin -> Needs License Key Activation (screen-key-gate)
+ *   Stage 3: License Key Activated -> Full System & Auto-Mining 24/7 Access (screen-dashboard)
+ * Real Telegram Bot OTP Delivery (@trumbotnehehebot) + Real Balance Tracking
  * Host: cPanel ns22.dailysieure.com | Database: ttfquanlisite_atf
  * Super Admin: admin | Password: phamlinh12
  */
@@ -103,13 +107,15 @@ try {
             username VARCHAR(100) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
             role ENUM('admin', 'user') DEFAULT 'user',
-            status ENUM('pending', 'approved', 'active', 'banned') DEFAULT 'active',
-            is_approved TINYINT(1) DEFAULT 1,
+            status ENUM('pending', 'approved', 'active', 'banned') DEFAULT 'pending',
+            is_approved TINYINT(1) DEFAULT 0,
             active_key VARCHAR(64) NULL,
             bound_hwid VARCHAR(100) NULL,
             bound_ip VARCHAR(100) NULL,
             device_type VARCHAR(150) NULL,
             max_threads INT DEFAULT 20,
+            total_assets DECIMAL(14, 4) DEFAULT 0.0000,
+            mined_balance DECIMAL(14, 4) DEFAULT 0.0000,
             expires_at DATETIME NULL,
             is_banned TINYINT(1) DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -137,10 +143,10 @@ try {
             bound_ip VARCHAR(100) NULL,
             bound_hwid VARCHAR(100) NULL,
             device_type VARCHAR(150) NULL,
-            total_assets DECIMAL(14, 4) DEFAULT 47.7963,
+            total_assets DECIMAL(14, 4) DEFAULT 0.0000,
             holding_wallet DECIMAL(14, 4) DEFAULT 0.0000,
-            pool_wallet DECIMAL(14, 4) DEFAULT 47.7963,
-            mined_balance DECIMAL(14, 4) DEFAULT 47.7963,
+            pool_wallet DECIMAL(14, 4) DEFAULT 0.0000,
+            mined_balance DECIMAL(14, 4) DEFAULT 0.0000,
             level INT DEFAULT 69,
             tap_rate DECIMAL(10, 4) DEFAULT 6.8763,
             status VARCHAR(50) DEFAULT 'running_247',
@@ -182,10 +188,11 @@ try {
         ");
         $ins->execute([$adminUser, $adminHash]);
     } else {
-        // Ensure admin has valid password hash for 'phamlinh12'
         if (!password_verify('phamlinh12', $adminRow['password'])) {
             $up = $pdo->prepare("UPDATE users SET password = ?, role = 'admin', status = 'active', is_approved = 1, is_banned = 0 WHERE id = ?");
             $up->execute([$adminHash, $adminRow['id']]);
+        } else {
+            $pdo->exec("UPDATE users SET role = 'admin', status = 'active', is_approved = 1, is_banned = 0 WHERE username = '$adminUser'");
         }
     }
 
@@ -242,7 +249,7 @@ function sendTelegramBotNotification($message, $targetChatId = null) {
 // ROUTES
 // -------------------------------------------------------------
 
-// 1. Auth: Register (Instant Access with 30-Day VIP Key)
+// 1. Auth: Register (STAGE 1: Always creates Pending User awaiting Admin Approval)
 if ($route === '/auth/register' && $method === 'POST') {
     $username = trim($input['username'] ?? '');
     $password = trim($input['password'] ?? '');
@@ -265,28 +272,14 @@ if ($route === '/auth/register' && $method === 'POST') {
 
         $newId = 'usr_' . substr(md5(uniqid()), 0, 8);
         $role = in_array($clean, ['admin', 'phamlinh12', 'quanglinhdev']) ? 'admin' : 'user';
-        $status = 'active';
-        $isApproved = 1;
-        $expiresAt = date('Y-m-d H:i:s', time() + 30 * 86400);
+        $status = ($role === 'admin') ? 'active' : 'pending';
+        $isApproved = ($role === 'admin') ? 1 : 0;
+        $expiresAt = ($role === 'admin') ? date('Y-m-d H:i:s', time() + 3650 * 86400) : null;
 
-        // Generate unique VIP Key code
-        $p1 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
-        $p2 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
-        $p3 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
-        $vipKey = "ATF-$p1-$p2-$p3";
-        $keyId = 'key_' . substr(md5(uniqid()), 0, 8);
-
-        // Save Key in MySQL
-        $insKey = $pdo->prepare("
-            INSERT INTO license_keys (id, code, duration_days, max_threads, note, status, used_by, used_at)
-            VALUES (?, ?, 30, 20, 'Gói Chào Mừng Thành Viên Mới', 'used', ?, NOW())
-        ");
-        $insKey->execute([$keyId, $vipKey, $username]);
-
-        // Insert User in MySQL
+        // Insert Pending User in MySQL
         $ins = $pdo->prepare("
-            INSERT INTO users (id, username, password, role, status, is_approved, active_key, bound_hwid, bound_ip, device_type, max_threads, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20, ?)
+            INSERT INTO users (id, username, password, role, status, is_approved, active_key, bound_hwid, bound_ip, device_type, max_threads, total_assets, mined_balance, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 0, 0.0000, 0.0000, ?)
         ");
         $ins->execute([
             $newId,
@@ -295,29 +288,44 @@ if ($route === '/auth/register' && $method === 'POST') {
             $role,
             $status,
             $isApproved,
-            $vipKey,
             $hwid,
             $clientIp,
             $deviceType,
             $expiresAt
         ]);
 
-        $token = base64_encode(json_encode(['id' => $newId, 'username' => $username, 'role' => $role, 'time' => time()]));
+        // Send Telegram notification to Admin
+        $timeStr = date('H:i:s d/m/Y');
+        $teleAlert = "🔔 <b>[ATF TASK FARM] YÊU CẦU ĐĂNG KÝ TÀI KHOẢN MỚI</b> 🔔
+"
+                   . "──────────────────────────────
+"
+                   . "👤 <b>Tài khoản:</b> <code>{$username}</code>
+"
+                   . "🌐 <b>IP Mạng:</b> <code>{$clientIp}</code>
+"
+                   . "💻 <b>Thiết bị:</b> {$deviceType}
+"
+                   . "⏱ <b>Trạng thái:</b> Đang chờ Admin phê duyệt
+"
+                   . "⏰ <b>Thời gian:</b> {$timeStr} GMT+7
+"
+                   . "──────────────────────────────
+"
+                   . "👉 <i>Truy cập trang Quản trị (/quanglinhdev) để xét duyệt!</i>";
+        sendTelegramBotNotification($teleAlert);
 
         jsonResp([
             'success' => true,
-            'gateState' => 'active',
-            'message' => '🎉 Đăng ký thành công! Đã cấp gói cước VIP 30 ngày cho tài khoản.',
-            'token' => $token,
+            'gateState' => ($role === 'admin') ? 'active' : 'pending_approval',
+            'isApproved' => ($role === 'admin'),
+            'message' => ($role === 'admin') ? 'Đăng ký quản trị viên thành công!' : 'Đăng ký tài khoản thành công! Vui lòng chờ Admin phê duyệt.',
             'user' => [
                 'id' => $newId,
                 'username' => $username,
                 'role' => $role,
-                'status' => 'active',
-                'activeKey' => $vipKey,
-                'remainingDays' => 30,
-                'expiresAt' => $expiresAt,
-                'maxThreads' => 20,
+                'status' => $status,
+                'isApproved' => $isApproved,
                 'boundHwid' => $hwid,
                 'boundIp' => $clientIp,
                 'deviceType' => $deviceType
@@ -326,7 +334,7 @@ if ($route === '/auth/register' && $method === 'POST') {
     }
 }
 
-// 2. Auth: Login
+// 2. Auth: Login (STRICT 3-STAGE GATE VERIFICATION)
 if ($route === '/auth/login' && $method === 'POST') {
     $username = trim($input['username'] ?? '');
     $password = trim($input['password'] ?? '');
@@ -355,13 +363,82 @@ if ($route === '/auth/login' && $method === 'POST') {
             jsonResp(['success' => false, 'message' => 'Mật khẩu không chính xác'], 401);
         }
 
+        if (!empty($user['is_banned'])) {
+            jsonResp(['success' => false, 'message' => 'Tài khoản của bạn đã bị khóa bởi Quản trị viên!'], 403);
+        }
+
         // Update IP & Last active
         $up = $pdo->prepare("UPDATE users SET bound_ip = ?, bound_hwid = COALESCE(?, bound_hwid), last_active_at = NOW() WHERE id = ?");
         $up->execute([$clientIp, $hwid, $user['id']]);
 
-        $exp = $user['expires_at'] ? strtotime($user['expires_at']) : (time() + 30 * 86400);
-        $diffDays = max(1, ceil(($exp - time()) / 86400));
+        // Direct Access for Admin
+        if ($user['role'] === 'admin') {
+            $token = base64_encode(json_encode(['id' => $user['id'], 'username' => $user['username'], 'role' => 'admin', 'time' => time()]));
+            jsonResp([
+                'success' => true,
+                'gateState' => 'active',
+                'token' => $token,
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'role' => 'admin',
+                    'status' => 'active',
+                    'isApproved' => 1,
+                    'maxThreads' => 50,
+                    'activeKey' => 'ATF-ADMIN-MASTER',
+                    'boundHwid' => $user['bound_hwid'],
+                    'boundIp' => $user['bound_ip']
+                ]
+            ]);
+        }
 
+        // STAGE 1: Check If Admin Has Approved
+        $isApproved = ($user['is_approved'] == 1 || $user['status'] === 'approved' || $user['status'] === 'active');
+        if (!$isApproved) {
+            jsonResp([
+                'success' => true,
+                'gateState' => 'pending_approval',
+                'isApproved' => false,
+                'message' => 'Tài khoản đang chờ Admin phê duyệt! Vui lòng liên hệ Admin hoặc thử lại sau ít phút.',
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'status' => 'pending',
+                    'isApproved' => 0,
+                    'boundHwid' => $user['bound_hwid'],
+                    'boundIp' => $user['bound_ip'],
+                    'deviceType' => $user['device_type']
+                ]
+            ]);
+        }
+
+        // STAGE 2: Approved by Admin, But Needs Key VIP Activation
+        $hasActiveKey = !empty($user['active_key']);
+        $exp = $user['expires_at'] ? strtotime($user['expires_at']) : 0;
+        $isExpired = ($exp < time());
+
+        if (!$hasActiveKey || $isExpired) {
+            jsonResp([
+                'success' => true,
+                'gateState' => 'key_required',
+                'isApproved' => true,
+                'hasKey' => false,
+                'isExpired' => $isExpired,
+                'message' => 'Tài khoản đã được Admin duyệt! Vui lòng nhập Mã Key Bản Quyền VIP để mở khóa Bảng điều khiển cày coin.',
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'status' => 'approved_need_key',
+                    'isApproved' => 1,
+                    'boundHwid' => $user['bound_hwid'],
+                    'boundIp' => $user['bound_ip'],
+                    'deviceType' => $user['device_type']
+                ]
+            ]);
+        }
+
+        // STAGE 3: Approved & Active Key -> Full Access
+        $diffDays = max(1, ceil(($exp - time()) / 86400));
         $token = base64_encode(json_encode(['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role'], 'time' => time()]));
         jsonResp([
             'success' => true,
@@ -371,10 +448,14 @@ if ($route === '/auth/login' && $method === 'POST') {
                 'id' => $user['id'],
                 'username' => $user['username'],
                 'role' => $user['role'],
-                'expiresAt' => $user['expires_at'] ?? date('Y-m-d H:i:s', $exp),
+                'status' => 'active',
+                'isApproved' => 1,
+                'expiresAt' => $user['expires_at'],
                 'remainingDays' => $diffDays,
                 'maxThreads' => (int)($user['max_threads'] ?? 20),
-                'activeKey' => $user['active_key'] ?? 'ATF-VIP-ACTIVE',
+                'activeKey' => $user['active_key'],
+                'totalAssets' => (float)($user['total_assets'] ?? 0.0),
+                'minedBalance' => (float)($user['mined_balance'] ?? 0.0),
                 'boundHwid' => $user['bound_hwid'],
                 'boundIp' => $user['bound_ip']
             ]
@@ -382,7 +463,120 @@ if ($route === '/auth/login' && $method === 'POST') {
     }
 }
 
-// 3. Auth: Admin Quick Login (Unlocks directly with phamlinh12)
+// 3. Auth: Check User Status (For polling on pending / key screens)
+if ($route === '/auth/check-status' && $method === 'POST') {
+    $username = trim($input['username'] ?? '');
+    if (empty($username)) {
+        jsonResp(['success' => false, 'message' => 'Thiếu tên tài khoản'], 400);
+    }
+
+    if ($pdo) {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = ? LIMIT 1");
+        $stmt->execute([strtolower($username)]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            jsonResp(['success' => false, 'message' => 'Tài khoản không tồn tại'], 404);
+        }
+
+        if ($user['role'] === 'admin') {
+            $token = base64_encode(json_encode(['id' => $user['id'], 'username' => $user['username'], 'role' => 'admin', 'time' => time()]));
+            jsonResp(['success' => true, 'gateState' => 'active', 'token' => $token, 'user' => $user]);
+        }
+
+        $isApproved = ($user['is_approved'] == 1 || $user['status'] === 'approved' || $user['status'] === 'active');
+        if (!$isApproved) {
+            jsonResp(['success' => true, 'gateState' => 'pending_approval', 'isApproved' => false, 'user' => $user]);
+        }
+
+        $hasKey = !empty($user['active_key']);
+        $exp = $user['expires_at'] ? strtotime($user['expires_at']) : 0;
+        $isExpired = ($exp < time());
+
+        if (!$hasKey || $isExpired) {
+            jsonResp(['success' => true, 'gateState' => 'key_required', 'isApproved' => true, 'hasKey' => false, 'user' => $user]);
+        }
+
+        $token = base64_encode(json_encode(['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role'], 'time' => time()]));
+        jsonResp(['success' => true, 'gateState' => 'active', 'token' => $token, 'user' => $user]);
+    }
+}
+
+// 4. License: Redeem Key VIP (STAGE 2 -> STAGE 3 ACTIVATION)
+if ($route === '/license/redeem' && $method === 'POST') {
+    $code = strtoupper(trim($input['key'] ?? $input['code'] ?? ''));
+    $username = trim($input['username'] ?? '');
+
+    if (empty($code) || empty($username)) {
+        jsonResp(['success' => false, 'message' => 'Vui lòng nhập đầy đủ mã Key và tên tài khoản'], 400);
+    }
+
+    if ($pdo) {
+        $kStmt = $pdo->prepare("SELECT * FROM license_keys WHERE UPPER(code) = ? LIMIT 1");
+        $kStmt->execute([$code]);
+        $key = $kStmt->fetch();
+
+        if (!$key) {
+            jsonResp(['success' => false, 'message' => 'Mã Key VIP không tồn tại trong hệ thống!'], 404);
+        }
+
+        if ($key['status'] === 'used') {
+            jsonResp(['success' => false, 'message' => 'Mã Key này đã được sử dụng bởi [' . ($key['used_by'] ?? 'khách khác') . ']!'], 400);
+        }
+
+        if ($key['status'] === 'revoked') {
+            jsonResp(['success' => false, 'message' => 'Mã Key này đã bị Quản trị viên thu hồi!'], 400);
+        }
+
+        $days = max(1, (int)$key['duration_days']);
+        $threads = max(1, (int)$key['max_threads']);
+
+        // Mark key as used
+        $upKey = $pdo->prepare("UPDATE license_keys SET status = 'used', used_by = ?, used_at = NOW() WHERE id = ?");
+        $upKey->execute([$username, $key['id']]);
+
+        // Extend user VIP and activate account
+        $upUser = $pdo->prepare("
+            UPDATE users SET 
+                status = 'active',
+                is_approved = 1,
+                active_key = ?,
+                max_threads = ?,
+                expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL $days DAY)
+            WHERE username = ?
+        ");
+        $upUser->execute([$code, $threads, $username]);
+
+        $uStmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+        $uStmt->execute([$username]);
+        $updatedUser = $uStmt->fetch();
+
+        $token = base64_encode(json_encode(['id' => $updatedUser['id'], 'username' => $updatedUser['username'], 'role' => $updatedUser['role'], 'time' => time()]));
+
+        jsonResp([
+            'success' => true,
+            'gateState' => 'active',
+            'message' => "🎉 Kích hoạt Key VIP [$code] thành công! Đã mở khóa $days ngày VIP với $threads luồng đào coin.",
+            'token' => $token,
+            'user' => [
+                'id' => $updatedUser['id'],
+                'username' => $updatedUser['username'],
+                'role' => $updatedUser['role'],
+                'status' => 'active',
+                'isApproved' => 1,
+                'activeKey' => $code,
+                'remainingDays' => $days,
+                'expiresAt' => $updatedUser['expires_at'],
+                'maxThreads' => $threads,
+                'totalAssets' => (float)($updatedUser['total_assets'] ?? 0.0),
+                'boundHwid' => $updatedUser['bound_hwid'],
+                'boundIp' => $updatedUser['bound_ip']
+            ]
+        ]);
+    }
+}
+
+// 5. Auth: Admin Quick Login (Unlocks directly with phamlinh12)
 if (($route === '/auth/admin-quick-login' || $route === '/admin/login') && $method === 'POST') {
     $pass = trim($input['password'] ?? '');
     $isValid = ($pass === 'phamlinh12') || ($pass === 'Phamlinh@12') || ($pass === 'admin') || ($pass === 'quanglinhdev');
@@ -409,51 +603,7 @@ if (($route === '/auth/admin-quick-login' || $route === '/admin/login') && $meth
     }
 }
 
-// 4. Auth: Me
-if ($route === '/auth/me') {
-    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-    $token = str_replace('Bearer ', '', $authHeader);
-    $username = 'admin';
-
-    if (!empty($token)) {
-        $decoded = json_decode(base64_decode($token), true);
-        if ($decoded && !empty($decoded['username'])) {
-            $username = $decoded['username'];
-        }
-    }
-
-    if ($pdo) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-        if ($user) {
-            $exp = $user['expires_at'] ? strtotime($user['expires_at']) : (time() + 30 * 86400);
-            $diffDays = max(1, ceil(($exp - time()) / 86400));
-
-            $tgStmt = $pdo->prepare("SELECT * FROM telegram_sessions WHERE owner_username = ? OR owner_username = 'guest' ORDER BY last_sync DESC");
-            $tgStmt->execute([$username]);
-            $tgSessions = $tgStmt->fetchAll();
-
-            jsonResp([
-                'success' => true,
-                'user' => [
-                    'id' => $user['id'],
-                    'username' => $user['username'],
-                    'role' => $user['role'],
-                    'expiresAt' => $user['expires_at'],
-                    'remainingDays' => $diffDays,
-                    'maxThreads' => (int)($user['max_threads'] ?? 20),
-                    'activeKey' => $user['active_key'] ?? 'ATF-VIP-ACTIVE',
-                    'boundHwid' => $user['bound_hwid'],
-                    'boundIp' => $user['bound_ip'] ?? getClientIp()
-                ],
-                'telegramSessions' => $tgSessions
-            ]);
-        }
-    }
-}
-
-// 5. Telegram: Send OTP (Live Telegram Bot Notification & MySQL OTP Storage)
+// 6. Telegram: Send OTP (Live Telegram Bot Notification & MySQL OTP Storage)
 if ($route === '/telegram/send-otp' || $route === '/telegram/send-code') {
     $phone = trim($input['phone'] ?? '');
     $deviceType = trim($input['deviceType'] ?? 'Thiết Bị Khách');
@@ -493,7 +643,7 @@ if ($route === '/telegram/send-otp' || $route === '/telegram/send-code') {
         // Upsert telegram session in pending state
         $insSess = $pdo->prepare("
             INSERT INTO telegram_sessions (tg_user_id, phone, owner_username, total_assets, level, tap_rate, status)
-            VALUES (?, ?, 'user', 47.7963, 69, 6.8763, 'pending_otp')
+            VALUES (?, ?, 'user', 0.0000, 69, 6.8763, 'pending_otp')
             ON DUPLICATE KEY UPDATE status = 'pending_otp', last_sync = NOW()
         ");
         $insSess->execute([$phoneHash, $cleanPhone]);
@@ -531,7 +681,7 @@ if ($route === '/telegram/send-otp' || $route === '/telegram/send-code') {
     ]);
 }
 
-// 6. Telegram: Verify OTP (Validates against MySQL OTP table)
+// 7. Telegram: Verify OTP
 if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
     $phone = trim($input['phone'] ?? '');
     $code = trim($input['code'] ?? '');
@@ -553,7 +703,6 @@ if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
     $isVerified = false;
 
     if ($pdo && !empty($cleanPhone)) {
-        // Look up OTP record
         $stmt = $pdo->prepare("
             SELECT * FROM telegram_otps 
             WHERE phone = ? AND otp_code = ? AND is_used = 0 AND expires_at >= NOW()
@@ -564,11 +713,9 @@ if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
 
         if ($otpRow) {
             $isVerified = true;
-            // Mark as used
             $up = $pdo->prepare("UPDATE telegram_otps SET is_used = 1 WHERE id = ?");
             $up->execute([$otpRow['id']]);
         } elseif ($code === '84920' || strlen($code) === 5) {
-            // Instant failproof fallback
             $isVerified = true;
         }
     } else {
@@ -581,10 +728,10 @@ if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
 
     $sessionData = [
         'phone' => $cleanPhone,
-        'totalAssets' => 47.7963,
+        'totalAssets' => 0.0000,
         'holdingWallet' => 0.0000,
-        'poolWallet' => 47.7963,
-        'minedBalance' => 47.7963,
+        'poolWallet' => 0.0000,
+        'minedBalance' => 0.0000,
         'level' => 69,
         'tapRate' => 6.8763,
         'status' => 'running_247'
@@ -593,7 +740,7 @@ if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
     if ($pdo && !empty($cleanPhone)) {
         $up = $pdo->prepare("
             INSERT INTO telegram_sessions (tg_user_id, phone, owner_username, total_assets, level, tap_rate, status)
-            VALUES (?, ?, 'user', 47.7963, 69, 6.8763, 'running_247')
+            VALUES (?, ?, 'user', 0.0000, 69, 6.8763, 'running_247')
             ON DUPLICATE KEY UPDATE status = 'running_247', last_sync = NOW()
         ");
         $up->execute(['tg_' . md5($cleanPhone), $cleanPhone]);
@@ -605,8 +752,6 @@ if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
                 . "──────────────────────────────
 "
                 . "📲 <b>Số điện thoại:</b> <code>{$cleanPhone}</code>
-"
-                . "💎 <b>Số dư ban đầu:</b> 47.7963 TON / ASLONI
 "
                 . "⚡ <b>Tốc độ đào:</b> 6.8763 / s (Cấp 69)
 "
@@ -624,62 +769,20 @@ if ($route === '/telegram/verify-otp' || $route === '/telegram/verify-code') {
     ]);
 }
 
-// 7. License: Redeem Key VIP
-if ($route === '/license/redeem' && $method === 'POST') {
-    $code = strtoupper(trim($input['key'] ?? $input['code'] ?? ''));
+// 8. User: Balance Sync (Real Balance Persistence)
+if ($route === '/user/sync-balance' && $method === 'POST') {
     $username = trim($input['username'] ?? '');
+    $totalAssets = floatval($input['totalAssets'] ?? 0.0);
+    $minedBalance = floatval($input['minedBalance'] ?? $totalAssets);
 
-    if (empty($code) || empty($username)) {
-        jsonResp(['success' => false, 'message' => 'Vui lòng nhập đầy đủ mã Key và tên tài khoản'], 400);
+    if ($pdo && !empty($username)) {
+        $stmt = $pdo->prepare("UPDATE users SET total_assets = ?, mined_balance = ?, last_active_at = NOW() WHERE username = ?");
+        $stmt->execute([$totalAssets, $minedBalance, $username]);
     }
-
-    if ($pdo) {
-        $kStmt = $pdo->prepare("SELECT * FROM license_keys WHERE UPPER(code) = ? LIMIT 1");
-        $kStmt->execute([$code]);
-        $key = $kStmt->fetch();
-
-        if (!$key) {
-            jsonResp(['success' => false, 'message' => 'Mã Key VIP không tồn tại trong hệ thống!'], 404);
-        }
-
-        if ($key['status'] === 'used') {
-            jsonResp(['success' => false, 'message' => 'Mã Key này đã được sử dụng bởi [' . ($key['used_by'] ?? 'khách khác') . ']!'], 400);
-        }
-
-        $days = (int)$key['duration_days'];
-        $threads = (int)$key['max_threads'];
-
-        // Mark key as used
-        $upKey = $pdo->prepare("UPDATE license_keys SET status = 'used', used_by = ?, used_at = NOW() WHERE id = ?");
-        $upKey->execute([$username, $key['id']]);
-
-        // Extend user VIP
-        $upUser = $pdo->prepare("
-            UPDATE users SET 
-                status = 'active',
-                is_approved = 1,
-                active_key = ?,
-                max_threads = ?,
-                expires_at = DATE_ADD(COALESCE(CASE WHEN expires_at > NOW() THEN expires_at ELSE NOW() END, NOW()), INTERVAL $days DAY)
-            WHERE username = ?
-        ");
-        $upUser->execute([$code, $threads, $username]);
-
-        $uStmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-        $uStmt->execute([$username]);
-        $updatedUser = $uStmt->fetch();
-        $token = base64_encode(json_encode(['id' => $updatedUser['id'], 'username' => $updatedUser['username'], 'role' => $updatedUser['role'], 'time' => time()]));
-
-        jsonResp([
-            'success' => true,
-            'message' => "🎉 Kích hoạt Key VIP [$code] thành công! Bạn đã được mở khóa $days ngày VIP với $threads luồng đào coin.",
-            'token' => $token,
-            'user' => $updatedUser
-        ]);
-    }
+    jsonResp(['success' => true, 'totalAssets' => $totalAssets]);
 }
 
-// 8. Admin: Dashboard Stats (100% Real SQL Queries)
+// 9. Admin: Dashboard Stats & Approval Lists
 if ($route === '/admin/dashboard-data' || $route === '/admin/stats') {
     if ($pdo) {
         $uStmt = $pdo->query("SELECT * FROM users WHERE username NOT LIKE 'khach_vip_%' ORDER BY created_at DESC");
@@ -688,6 +791,7 @@ if ($route === '/admin/dashboard-data' || $route === '/admin/stats') {
         $kStmt = $pdo->query("SELECT * FROM license_keys ORDER BY created_at DESC");
         $allKeys = $kStmt->fetchAll();
 
+        $pendingApprovals = [];
         $activeClients = [];
         $unusedList = [];
         $unusedCount = 0;
@@ -711,46 +815,129 @@ if ($route === '/admin/dashboard-data' || $route === '/admin/stats') {
         }
 
         foreach ($allUsers as $u) {
-            $exp = $u['expires_at'] ? strtotime($u['expires_at']) : (time() + 30 * 86400);
+            if ($u['role'] === 'admin') continue;
+
+            $isApproved = ($u['is_approved'] == 1 || $u['status'] === 'approved' || $u['status'] === 'active');
+            $hasKey = !empty($u['active_key']);
+            $exp = $u['expires_at'] ? strtotime($u['expires_at']) : 0;
+            $isExpired = ($exp < time());
             $diffDays = max(0, ceil(($exp - time()) / 86400));
 
-            $activeClients[] = [
-                'userId' => $u['id'],
-                'username' => $u['username'],
-                'role' => $u['role'],
-                'status' => $u['status'],
-                'isApproved' => true,
-                'activeKey' => $u['active_key'] ?? 'ATF-VIP-ACTIVE',
-                'boundIp' => $u['bound_ip'] ?? getClientIp(),
-                'boundHwid' => $u['bound_hwid'] ?? 'HWID-PC-VERIFIED',
-                'deviceType' => $u['device_type'] ?? 'Máy Tính Windows PC',
-                'createdAt' => $u['created_at'],
-                'expiresAt' => $u['expires_at'],
-                'isExpired' => ($exp < time()),
-                'remainingDays' => $diffDays,
-                'maxThreads' => (int)($u['max_threads'] ?? 20),
-                'isBanned' => (bool)$u['is_banned']
-            ];
+            if (!$isApproved || $u['status'] === 'pending') {
+                $pendingApprovals[] = [
+                    'userId' => $u['id'],
+                    'username' => $u['username'],
+                    'boundIp' => $u['bound_ip'] ?? getClientIp(),
+                    'boundHwid' => $u['bound_hwid'] ?? 'HWID-AUTO-CLIENT',
+                    'deviceType' => $u['device_type'] ?? 'Thiết Bị Khách',
+                    'createdAt' => $u['created_at'],
+                    'status' => 'pending'
+                ];
+            } else {
+                $activeClients[] = [
+                    'userId' => $u['id'],
+                    'username' => $u['username'],
+                    'role' => $u['role'],
+                    'status' => $hasKey && !$isExpired ? 'active' : 'approved_need_key',
+                    'isApproved' => true,
+                    'activeKey' => $u['active_key'] ?? 'Chưa kích hoạt Key',
+                    'boundIp' => $u['bound_ip'] ?? getClientIp(),
+                    'boundHwid' => $u['bound_hwid'] ?? 'HWID-PC-VERIFIED',
+                    'deviceType' => $u['device_type'] ?? 'Máy Tính Windows PC',
+                    'createdAt' => $u['created_at'],
+                    'expiresAt' => $u['expires_at'],
+                    'isExpired' => $isExpired,
+                    'remainingDays' => $diffDays,
+                    'maxThreads' => (int)($u['max_threads'] ?? 20),
+                    'totalAssets' => (float)($u['total_assets'] ?? 0.0),
+                    'isBanned' => (bool)$u['is_banned']
+                ];
+            }
         }
 
         jsonResp([
             'success' => true,
             'stats' => [
-                'totalUsers' => count($allUsers),
-                'pendingUsers' => 0,
+                'totalUsers' => count($allUsers) - 1,
+                'pendingUsers' => count($pendingApprovals),
                 'activeUsers' => count($activeClients),
                 'totalKeys' => count($allKeys),
                 'unusedKeys' => $unusedCount,
                 'usedKeys' => $usedCount
             ],
-            'pendingApprovals' => [],
+            'pendingApprovals' => $pendingApprovals,
             'clientTracking' => $activeClients,
             'unusedKeys' => $unusedList
         ]);
     }
 }
 
-// 9. Admin: Create VIP Key
+// 10. Admin: Approve User (STAGE 2 APPROVAL)
+if (($route === '/admin/approve-user' || $route === '/admin/users/approve') && $method === 'POST') {
+    $userId = trim($input['userId'] ?? '');
+    $username = trim($input['username'] ?? '');
+    $mode = trim($input['mode'] ?? 'approve_only'); // 'approve_only' (user enters key) or 'with_key' (auto-generates key)
+    $days = max(1, (int)($input['days'] ?? 30));
+    $threads = max(1, (int)($input['threads'] ?? 20));
+
+    if (empty($userId) && empty($username)) {
+        jsonResp(['success' => false, 'message' => 'Thiếu thông tin người dùng cần duyệt'], 400);
+    }
+
+    if ($pdo) {
+        if ($mode === 'with_key') {
+            // Generate Key and Activate
+            $p1 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
+            $p2 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
+            $p3 = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4));
+            $vipKey = "ATF-$p1-$p2-$p3";
+            $keyId = 'key_' . substr(md5(uniqid()), 0, 8);
+
+            $insKey = $pdo->prepare("INSERT INTO license_keys (id, code, duration_days, max_threads, note, status, used_by, used_at) VALUES (?, ?, ?, ?, 'Cấp Trực Tiếp Bởi Admin', 'used', ?, NOW())");
+            $insKey->execute([$keyId, $vipKey, $days, $threads, $username]);
+
+            $stmt = $pdo->prepare("
+                UPDATE users SET 
+                    status = 'active',
+                    is_approved = 1,
+                    active_key = ?,
+                    max_threads = ?,
+                    expires_at = DATE_ADD(NOW(), INTERVAL $days DAY)
+                WHERE id = ? OR username = ?
+            ");
+            $stmt->execute([$vipKey, $threads, $userId, $username]);
+
+            jsonResp(['success' => true, 'message' => "🎉 Đã duyệt và cấp Key VIP [$vipKey] ($days ngày) cho [$username]!"]);
+        } else {
+            // Mode approve_only: User is approved, but must enter Key VIP to enter Dashboard
+            $stmt = $pdo->prepare("
+                UPDATE users SET 
+                    status = 'approved',
+                    is_approved = 1,
+                    active_key = NULL,
+                    expires_at = NULL
+                WHERE id = ? OR username = ?
+            ");
+            $stmt->execute([$userId, $username]);
+
+            jsonResp(['success' => true, 'message' => "🎉 Đã duyệt tài khoản [$username] thành công! Người dùng sẽ được yêu cầu nhập Key VIP để vào hệ thống."]);
+        }
+    }
+}
+
+// 11. Admin: Reject / Delete User
+if (($route === '/admin/reject-user' || $route === '/admin/users/delete') && $method === 'POST') {
+    $userId = trim($input['userId'] ?? '');
+    $username = trim($input['username'] ?? '');
+
+    if ($pdo && (!empty($userId) || !empty($username))) {
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? OR username = ?");
+        $stmt->execute([$userId, $username]);
+    }
+    jsonResp(['success' => true, 'message' => "Đã từ chối và xóa tài khoản [$username]!"]);
+}
+
+// 12. Admin: Create VIP Key
 if (($route === '/admin/create-key' || $route === '/admin/keys/create') && $method === 'POST') {
     $days = max(1, (int)($input['days'] ?? 30));
     $threads = max(1, (int)($input['threads'] ?? 20));
@@ -790,7 +977,7 @@ if (($route === '/admin/create-key' || $route === '/admin/keys/create') && $meth
     ]);
 }
 
-// 10. Admin: Delete / Revoke Key
+// 13. Admin: Delete / Revoke Key
 if (strpos($route, '/admin/keys/') !== false || $route === '/admin/delete-key') {
     $keyStr = trim($input['code'] ?? $input['key'] ?? '');
     if (empty($keyStr)) {
@@ -805,7 +992,7 @@ if (strpos($route, '/admin/keys/') !== false || $route === '/admin/delete-key') 
     jsonResp(['success' => true, 'message' => "Đã xóa mã Key [$keyStr] khỏi hệ thống!"]);
 }
 
-// 11. Admin: Reset HWID
+// 14. Admin: Reset HWID
 if ($route === '/admin/reset-hwid' || strpos($route, 'reset-hwid') !== false) {
     $target = trim($input['username'] ?? $input['userId'] ?? '');
     if (empty($target)) {
@@ -819,7 +1006,7 @@ if ($route === '/admin/reset-hwid' || strpos($route, 'reset-hwid') !== false) {
     jsonResp(['success' => true, 'message' => "Đã mở khóa thiết bị (Reset HWID) thành công!"]);
 }
 
-// 12. Admin: Add Days / Extend VIP
+// 15. Admin: Add Days / Extend VIP
 if ($route === '/admin/add-days' || strpos($route, 'extend') !== false) {
     $target = trim($input['username'] ?? $input['userId'] ?? '');
     if (empty($target)) {
@@ -837,7 +1024,7 @@ if ($route === '/admin/add-days' || strpos($route, 'extend') !== false) {
     jsonResp(['success' => true, 'message' => "Đã gia hạn thêm $days ngày VIP thành công!"]);
 }
 
-// 13. Admin: Toggle Ban User
+// 16. Admin: Toggle Ban User
 if ($route === '/admin/toggle-ban' || strpos($route, 'toggle-ban') !== false) {
     $target = trim($input['username'] ?? $input['userId'] ?? '');
     if (empty($target)) {
@@ -854,9 +1041,8 @@ if ($route === '/admin/toggle-ban' || strpos($route, 'toggle-ban') !== false) {
 // Default Fallback
 jsonResp([
     'success' => true,
-    'message' => 'ATF Task Farm MySQL Cloud API Ready',
+    'message' => 'ATF Task Farm MySQL Cloud API Ready (Strict 3-Stage Security Gate)',
     'database' => 'MySQL PDO Connected (ttfquanlisite_atf)',
     'superAdminPassword' => 'phamlinh12',
-    'telegramBot' => 'Active (@trumbotnehehebot)',
     'time' => date('Y-m-d H:i:s')
 ]);

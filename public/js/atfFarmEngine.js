@@ -1,18 +1,19 @@
 /**
- * ATF Task Farm - Multi-Thread Client Mining Engine v5.0
- * Simulates Real Local Mining, Auto Tap 24/7 & Asloni Coin Synchronization
+ * ATF Task Farm - Multi-Thread Client Mining Engine v5.2
+ * Real Client Mining Only (Zero Fake Initial Balances)
+ * Clean Real Balance Accumulation & Real-Time Sync
  */
 
 class ATFFarmEngine {
   constructor() {
     this.isAutoRunning = true;
-    this.totalAssets = 47.7963;
+    this.totalAssets = 0.0000;
     this.holdingWallet = 0.0000;
-    this.poolWallet = 47.7963;
-    this.minedBalance = 47.7963;
+    this.poolWallet = 0.0000;
+    this.minedBalance = 0.0000;
     this.level = 69;
     this.tapRate = 6.8763;
-    this.totalTaps = 84920;
+    this.totalTaps = 0;
     this.claimSecondsRemaining = 3584;
 
     this.missions = [
@@ -42,22 +43,30 @@ class ATFFarmEngine {
     this.updateClientStatusBadge();
   }
 
+  getUserStorageKey() {
+    const user = JSON.parse(localStorage.getItem('atf_token_user') || '{}');
+    return user.username ? `atf_farm_balance_${user.username}` : 'atf_farm_balance_guest';
+  }
+
   loadSavedState() {
     try {
-      const saved = localStorage.getItem('atf_farm_balance_v3');
+      const key = this.getUserStorageKey();
+      const saved = localStorage.getItem(key);
       if (saved) {
         const p = JSON.parse(saved);
         if (typeof p.totalAssets === 'number') this.totalAssets = p.totalAssets;
         if (typeof p.holdingWallet === 'number') this.holdingWallet = p.holdingWallet;
         if (typeof p.poolWallet === 'number') this.poolWallet = p.poolWallet;
         if (typeof p.minedBalance === 'number') this.minedBalance = p.minedBalance;
+        if (typeof p.totalTaps === 'number') this.totalTaps = p.totalTaps;
       }
     } catch(e) {}
   }
 
   saveState() {
     try {
-      localStorage.setItem('atf_farm_balance_v3', JSON.stringify({
+      const key = this.getUserStorageKey();
+      localStorage.setItem(key, JSON.stringify({
         totalAssets: this.totalAssets,
         holdingWallet: this.holdingWallet,
         poolWallet: this.poolWallet,
@@ -65,6 +74,21 @@ class ATFFarmEngine {
         totalTaps: this.totalTaps,
         updatedAt: Date.now()
       }));
+
+      // Sync with server API
+      const basePath = window.location.pathname.includes('/atf') ? '/atf' : '';
+      const user = JSON.parse(localStorage.getItem('atf_token_user') || '{}');
+      if (user.username) {
+        fetch(`${basePath}/api/user/sync-balance`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: user.username,
+            totalAssets: this.totalAssets,
+            minedBalance: this.minedBalance
+          })
+        }).catch(() => {});
+      }
     } catch(e) {}
   }
 
@@ -72,7 +96,7 @@ class ATFFarmEngine {
     const el = document.getElementById('client-engine-status-badge') || document.getElementById('hud-engine-badge');
     if (el) {
       el.innerHTML = `<div class="badge-real-engine" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 6px;">
-        <i class="fa-solid fa-microchip fa-pulse"></i> MÁY KHÁCH ĐANG CHẠY THẬT 100% (LIVE CLIENT ENGINE)
+        <i class="fa-solid fa-microchip fa-pulse"></i> MÁY KHÁCH ĐANG CHẠY THẬT (LIVE CLIENT MINING)
       </div>`;
     }
   }

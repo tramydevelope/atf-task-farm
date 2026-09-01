@@ -876,18 +876,38 @@ const App = {
           username,
           password,
           hwid: this.clientHwid,
+          deviceType: window.FingerprintEngine ? window.FingerprintEngine.getRealDeviceType() : 'Máy Tính PC',
           clientIp: this.networkInfo?.ip || '116.98.234.129',
-          clientIsp: this.networkInfo?.isp || 'Viettel Group',
-          clientLocation: (this.networkInfo?.city || 'Hà Nội') + ', ' + (this.networkInfo?.country || 'Việt Nam'),
-          clientDetails: this.clientHwidDetails
+          clientIsp: this.networkInfo?.isp || 'Viettel Group'
         })
       });
 
       if (res && res.success) {
+        // STAGE 1: Pending Approval
+        if (res.gateState === 'pending_approval' || res.user?.status === 'pending') {
+          localStorage.setItem('atf_pending_user', JSON.stringify(res.user));
+          const pUser = document.getElementById('pending-username-display');
+          if (pUser) pUser.innerText = '@' + username;
+          this.showToast(res.message || 'Tài khoản đang chờ Admin phê duyệt!', 'info');
+          this.showScreen('pending');
+          return;
+        }
+
+        // STAGE 2: Approved, Needs Key Activation
+        if (res.gateState === 'key_required' || res.user?.status === 'approved_need_key') {
+          localStorage.setItem('atf_key_gate_user', JSON.stringify(res.user));
+          const gateUser = document.getElementById('gate-username-display');
+          if (gateUser) gateUser.innerText = '@' + username;
+          this.showToast(res.message || 'Tài khoản đã duyệt! Vui lòng nhập Key VIP.', 'info');
+          this.showScreen('key');
+          return;
+        }
+
+        // STAGE 3: Active Dashboard
         this.token = res.token;
         localStorage.setItem('atf_token', this.token);
         this.currentUser = res.user;
-        this.showToast(res.message, 'success');
+        this.showToast(res.message || 'Đăng nhập thành công!', 'success');
         this.updateUserUI();
         this.showScreen('dashboard');
         this.startHeartbeat();
@@ -902,7 +922,7 @@ const App = {
       btn.disabled = false;
       btn.innerHTML = type === 'login' ? '<i class="fa-solid fa-bolt"></i> VÀO HỆ THỐNG ATF VIP' : '<i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN MỚI';
     }
-  },
+  },,
 
   async handleRedeemKey() {
     const keyInput = document.getElementById('redeem-key-input');
@@ -946,9 +966,128 @@ const App = {
   },
 
   showScreen(screenName) {
-    document.getElementById('screen-auth').classList.toggle('hidden', screenName !== 'auth');
-    document.getElementById('screen-dashboard').classList.toggle('hidden', screenName !== 'dashboard');
+    const screens = {
+      'auth': document.getElementById('screen-auth'),
+      'pending': document.getElementById('screen-pending'),
+      'key': document.getElementById('screen-key-gate'),
+      'dashboard': document.getElementById('screen-dashboard')
+    };
+
+    Object.keys(screens).forEach(key => {
+      const el = screens[key];
+      if (el) {
+        const shouldShow = (key === screenName);
+        el.classList.toggle('hidden', !shouldShow);
+        if (key === 'pending' || key === 'key') {
+          el.style.display = shouldShow ? 'flex' : 'none';
+        } else if (key === 'auth') {
+          el.style.display = shouldShow ? 'flex' : 'none';
+        } else if (key === 'dashboard') {
+          el.style.display = shouldShow ? 'block' : 'none';
+        }
+      }
+    });
+
+    if (screenName === 'pending') {
+      this.startPendingApprovalPolling();
+    } else {
+      this.stopPendingApprovalPolling();
+    }
   },
+
+  pendingPollTimer: null,
+  startPendingApprovalPolling() {
+    if (this.pendingPollTimer) clearInterval(this.pendingPollTimer);
+    this.pendingPollTimer = setInterval(() => {
+      this.checkPendingApprovalStatus(true);
+    }, 4000);
+  },
+
+  stopPendingApprovalPolling() {
+    if (this.pendingPollTimer) {
+      clearInterval(this.pendingPollTimer);
+      this.pendingPollTimer = null;
+    }
+  },
+
+  async checkPendingApprovalStatus(isSilent = false) {
+    const pendingUser = JSON.parse(localStorage.getItem('atf_pending_user') || '{}');
+    const username = pendingUser.username || this.currentUser?.username;
+    if (!username) return;
+
+    try {
+      const res = await this.apiFetch('/api/auth/check-status', {
+        method: 'POST',
+        body: JSON.stringify({ username })
+      });
+
+      if (res && res.success) {
+        if (res.gateState === 'key_required') {
+          this.showToast('🎉 Tài khoản đã được Admin phê duyệt! Hãy nhập Mã Key VIP.', 'success');
+          const gateUser = document.getElementById('gate-username-display');
+          if (gateUser) gateUser.innerText = '@' + username;
+          localStorage.setItem('atf_key_gate_user', JSON.stringify(res.user || pendingUser));
+          this.showScreen('key');
+        } else if (res.gateState === 'active') {
+          this.token = res.token;
+          localStorage.setItem('atf_token', this.token);
+          this.currentUser = res.user;
+          this.showToast('🎉 Mở khóa hệ thống thành công!', 'success');
+          this.updateUserUI();
+          this.showScreen('dashboard');
+          this.initBotEngines();
+        } else if (!isSilent) {
+          this.showToast('Tài khoản vẫn đang chờ Admin duyệt...', 'info');
+        }
+      }
+    } catch(e) {
+      if (!isSilent) this.showToast('Lỗi kết nối máy chủ', 'error');
+    }
+  },
+
+  async redeemGateKey() {
+    const input = document.getElementById('input-gate-license-key');
+    const btn = document.getElementById('btn-gate-redeem');
+    const key = input ? input.value.trim().toUpperCase() : '';
+    const pendingUser = JSON.parse(localStorage.getItem('atf_pending_user') || localStorage.getItem('atf_key_gate_user') || '{}');
+    const username = pendingUser.username || this.currentUser?.username;
+
+    if (!key) {
+      this.showToast('Vui lòng nhập mã Key Bản Quyền VIP', 'warning');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kích hoạt...';
+    }
+
+    try {
+      const res = await this.apiFetch('/api/license/redeem', {
+        method: 'POST',
+        body: JSON.stringify({ key, username, hwid: this.clientHwid })
+      });
+
+      if (res && res.success) {
+        this.token = res.token;
+        localStorage.setItem('atf_token', this.token);
+        this.currentUser = res.user;
+        this.showToast(res.message || '🎉 Kích hoạt Key VIP thành công!', 'success');
+        this.updateUserUI();
+        this.showScreen('dashboard');
+        this.initBotEngines();
+      } else {
+        this.showToast(res ? res.message : 'Mã Key không hợp lệ hoặc đã sử dụng', 'error');
+      }
+    } catch(e) {
+      this.showToast('Lỗi kết nối máy chủ', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> KÍCH HOẠT KEY & VÀO HỆ THỐNG';
+      }
+    }
+  },,
 
   switchTab(tabId) {
     document.querySelectorAll('.nav-tab-chip').forEach(btn => {
