@@ -922,7 +922,7 @@ const App = {
       btn.disabled = false;
       btn.innerHTML = type === 'login' ? '<i class="fa-solid fa-bolt"></i> VÀO HỆ THỐNG ATF VIP' : '<i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN MỚI';
     }
-  },,
+  },
 
   async handleRedeemKey() {
     const keyInput = document.getElementById('redeem-key-input');
@@ -1087,7 +1087,7 @@ const App = {
         btn.innerHTML = '<i class="fa-solid fa-bolt"></i> KÍCH HOẠT KEY & VÀO HỆ THỐNG';
       }
     }
-  },,
+  },
 
   switchTab(tabId) {
     document.querySelectorAll('.nav-tab-chip').forEach(btn => {
