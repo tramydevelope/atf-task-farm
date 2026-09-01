@@ -72,7 +72,7 @@
             <i class="fa-regular fa-eye input-icon-toggle" onclick="App.togglePasswordVisibility('auth-login-password', this)"></i>
           </div>
         </div>
-        <button type="submit" id="btn-login" class="btn-auth-action btn-auth-primary">
+        <button type="button" id="btn-login" class="btn-auth-action btn-auth-primary" onclick="App.handleAuth('login')">
           <i class="fa-solid fa-bolt"></i> VÀO BẢNG ĐIỀU KHIỂN BOT
         </button>
       </form>
@@ -114,7 +114,7 @@
           </div>
         </div>
 
-        <button type="submit" id="btn-register" class="btn-auth-action btn-auth-success">
+        <button type="button" id="btn-register" class="btn-auth-action btn-auth-success" onclick="App.handleAuth('register')">
           <i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN MỚI
         </button>
       </form>
@@ -1135,12 +1135,12 @@
   <div id="toast-container"></div>
 
   <!-- Scripts -->
-  <script src="js/fingerprint.js?v=5.1.0"></script>
+  <script src="js/fingerprint.js?v=5.3.5"></script>
   <script src="js/botEngine.js?v=4.5.0"></script>
-  <script src="js/telegramBotEngine.js?v=4.5.0"></script>
-  <script src="js/atfFarmEngine.js?v=4.5.0"></script>
+  <script src="js/telegramBotEngine.js?v=5.3.5"></script>
+  <script src="js/atfFarmEngine.js?v=5.3.5"></script>
   <script src="js/admin.js?v=4.5.0"></script>
-  <script src="js/app.js?v=5.1.0"></script>
+  <script src="js/app.js?v=5.3.5"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {

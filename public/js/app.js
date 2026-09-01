@@ -30,7 +30,7 @@ const App = {
 
   async init() {
     this.startLiveClock();
-    this.initEventListeners();
+    this.setupEventListeners();
     this.checkSavedTheme();
     
     // Quét phần cứng và IP mạng thật
@@ -1157,6 +1157,7 @@ const App = {
       .replace(/'/g, '&#039;');
   },
 
+  initEventListeners() { this.setupEventListeners(); },
   setupEventListeners() {
     document.querySelectorAll('.auth-tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
